@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="description" content="129Xe MRI ventilation technical report" />
+		<meta name="author" content="Team Xenon" />
+		<link href="html_tmp/report_reset_GRE.css" rel="stylesheet" />
+		<link href="html_tmp/report_style_GRE.css" rel="stylesheet" />
+		<title>Gas Exchange Report</title>
+	</head>
+	<body>
+		<h1 id="big-title">
+			{scan_type} Ventilation Summary of Subject {subject_id}
+		</h1>
+		<h4>scan: {scan_date}; processed: {process_date}</h4>
+		<div class="map-container">
+			<div class="map-tile">
+				<img src="{bias_cor_ven_montage}" height="220px" />
+				<img src="{raw_proton_montage}" height="220px" />
+				<img src="{ven_montage}" height="220px" />
+			</div>
+			<div class="colorbar-tile">
+				<img src=img/grey_long.png height=200px>
+				<div class="space"></div>
+				<img src=img/grey_long.png height=200px>
+				<div class="space"></div>
+				<img src=img/colorbin_short.png height=150px>
+			</div>
+		</div>
+		<div class="hist-container" align="right">
+			<div class="hist-tile" align="right">
+				<img src="{ven_hist}" style="width: 100%" />
+				<!-- <div class="top-right">
+                  <h2>Ventilation</h2>
+                </div> -->
+			</div>
+		</div>
+		<div class="table-container">
+			<table align="right">
+				<tr class="title">
+					<th>Subject</th>
+					<th>{subject_id}</th>
+					<th>Ref</th>
+				</tr>
+				<tr class="rbc">
+					<td>Defect</td>
+					<td>{ven_defect}%</td>
+					<td>{r_ven_defect_ave}&#177;{r_ven_defect_std}%</td>
+				</tr>
+				<tr class="bar">
+					<td>Low</td>
+					<td>{ven_low}%</td>
+					<td>{r_ven_low_ave}&#177;{r_ven_low_std}%</td>
+				</tr>
+				<tr class="ven">
+					<td>High</td>
+					<td>{ven_high}%</td>
+					<td>{r_ven_high_ave}&#177;{r_ven_high_std}%</td>
+				</tr>
+				<tr class="ven">
+					<td>CV</td>
+					<td>{ven_cv}</td>
+					<td>{r_ven_CV_ave}&#177;{r_ven_CV_std}</td>
+				</tr>
+				<tr class="ven">
+					<td>Skewness</td>
+					<td>{ven_skewness}</td>
+					<td>{r_ven_skewness_ave}&#177;{r_ven_skewness_std}</td>
+				</tr>
+				<tr class="basic">
+					<td>SNR</td>
+					<td>{ven_snr}</td>
+					<td>---</td>
+				</tr>
+				<tr class="basic">
+					<td>TCV</td>
+					<td>{inflation}L</td>
+					<td>{r_ven_tcv_ave}&#177;{r_ven_tcv_std}</td>
+				</tr>
+			</table>
+		</div>
+	</body>
+</html>
