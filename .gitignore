@@ -164,8 +164,36 @@ test.jpg
 *.dll
 
 #Don't upload contents in option folder
+# Don't upload contents in option folder
 option/*.json
-config/*.py
+config/*
 !config/base_config.py
-!config/demo_config.py
+!config/demo_config_basic.py
+!config/demo_config_advanced.py
+!config/config_utils.py
+!config/tests/
+config/tests/*
+!config/tests/*.py
+
 report_introduction.html
+# Keep the assets folder
+assets/demo/*
+!assets/demo/*.dat
+!assets/demo/mask.nii
+
+**.pptx
+assets/tests/**/**.pdf
+assets/tests/**/**.mat
+assets/tests/**/**.pptx
+assets/tests/**/**.dat
+assets/tests/**/**.csv
+assets/tests/**/**.dcm
+assets/tests/**/**.nii
+assets/tests/**/**.nii.gz
+assets/tests/**/**.jpg
+assets/tests/**/**.nii.gz
+assets/tests/**/**.png
+assets/tests/**/**.IMA
+# ignore the data folder
+data/*
+!data/.gitkeep

@@ -197,7 +197,7 @@ Warning: this is the Team Xenon workflow only. Other users do not have to follow
    conda activate xevent #activates the conda environment
    ```
 
-5. **Run using the command line:** Create a config file using a text editor, and copy `config/demo_config.py` format. Rename the file to the patient's name, being able to identify it later on, and also save it into the `config` folder. Edit the fields to configure the pipeline. Then run
+5. **Run using the command line:** Create a config file using a text editor, and copy `base_config.py` format. Rename the file to the patient's name, being able to identify it later on, and also save it into the `config` folder. Edit the fields to configure the pipeline. Then run
 
    ```shell
    python main_mapping.py --config config/[yourconfigfile].py

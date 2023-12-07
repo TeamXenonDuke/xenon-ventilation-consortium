@@ -14,7 +14,7 @@ import biasfield
 import registration
 import segmentation
 from config import base_config
-from utils import binning, constants, io, metrics, misc
+from utils import binning, constants, io_utils, metrics, misc
 
 
 class GRESubject(object):
@@ -107,14 +107,18 @@ class GRESubject(object):
         Also scale each slice to be 128x128.
         """
         # xenon scan
-        out_dict = io.importDICOM(path=self.xenon_dicom_dir, scan_type=self.scan_type)
+        out_dict = io_utils.importDICOM(
+            path=self.xenon_dicom_dir, scan_type=self.scan_type
+        )
         self.ventilation_raw = out_dict[constants.IOFields.IMAGE]
         self.ventilation_pixelsize = out_dict[constants.IOFields.PIXEL_SIZE]
         self.xenonslicethickness = out_dict[constants.IOFields.SLICE_THICKNESS]
         self.xefov = out_dict[constants.IOFields.FOV]
         self.acquisition_time_Xe = out_dict[constants.IOFields.SCAN_DATE]
         # proton scan
-        out_dict = io.importDICOM(path=self.proton_dicom_dir, scan_type=self.scan_type)
+        out_dict = io_utils.importDICOM(
+            path=self.proton_dicom_dir, scan_type=self.scan_type
+        )
         self.proton_raw = out_dict[constants.IOFields.IMAGE]
         self.proton_pixelsize = out_dict[constants.IOFields.PIXEL_SIZE]
         self.protonslicethickness = out_dict[constants.IOFields.SLICE_THICKNESS]
@@ -276,7 +280,7 @@ class GRESubject(object):
             mask=self.mask_reg, scan_type=self.scan_type
         )
         # export montages
-        io.export_montage_overlay(
+        io_utils.export_montage_overlay(
             image_bin=self.ventilation_binning,
             image_background=self.proton_reg,
             path=os.path.join(
@@ -287,35 +291,35 @@ class GRESubject(object):
             ind_start=ind_start,
             ind_inter=ind_inter,
         )
-        io.export_montage_gray(
+        io_utils.export_montage_gray(
             image=self.ventilation_raw,
             path=os.path.join(self.data_dir, constants.OutputPaths.VEN_COR_MONTAGE_PNG),
             ind_start=ind_start,
             ind_inter=ind_inter,
-            min=np.percentile(np.abs(self.ventilation_raw), 0).astype(float),
-            max=np.percentile(
+            min_value=np.percentile(np.abs(self.ventilation_raw), 0).astype(float),
+            max_value=np.percentile(
                 np.abs(self.ventilation_raw), constants._VEN_PERCENTILE_RESCALE
             ).astype(float),
         )
-        io.export_montage_gray(
+        io_utils.export_montage_gray(
             image=self.proton_reg,
             path=os.path.join(
                 self.data_dir, constants.OutputPaths.PROTON_REG_MONTAGE_PNG
             ),
             ind_start=ind_start,
             ind_inter=ind_inter,
-            min=np.percentile(abs(self.proton_reg), 0).astype(float),
-            max=np.percentile(
+            min_value=np.percentile(abs(self.proton_reg), 0).astype(float),
+            max_value=np.percentile(
                 abs(self.proton_reg), constants._PROTON_PERCENTILE_RESCALE
             ).astype(float),
         )
-        io.export_montage_gray(
+        io_utils.export_montage_gray(
             image=self.ventilation_cor,
             path=os.path.join(self.data_dir, constants.OutputPaths.VEN_COR_MONTAGE_PNG),
             ind_start=ind_start,
             ind_inter=ind_inter,
-            min=np.percentile(abs(self.ventilation_cor), 0).astype(float),
-            max=np.percentile(
+            min_value=np.percentile(abs(self.ventilation_cor), 0).astype(float),
+            max_value=np.percentile(
                 abs(self.ventilation_cor), constants._VEN_PERCENTILE_RESCALE
             ).astype(float),
         )
@@ -326,7 +330,7 @@ class GRESubject(object):
             mask=self.mask_reg.astype(bool),
             percentile=constants._VEN_PERCENTILE_RESCALE,
         )[self.mask_reg.astype(bool)]
-        io.export_histogram(
+        io_utils.export_histogram(
             data=data,
             path=os.path.join(self.data_dir, constants.OutputPaths.VEN_HIST_PNG),
             color=constants.VENHISTOGRAMFields.COLOR,
@@ -338,7 +342,7 @@ class GRESubject(object):
 
     def generateHtmlPdf(self):
         """Generate HTML and PDF files."""
-        io.export_html_pdf_vent(
+        io_utils.export_html_pdf_vent(
             subject_id=self.subject_id,
             data_dir=self.data_dir,
             stats_dict=self.stats_dict,
@@ -347,7 +351,7 @@ class GRESubject(object):
 
     def generateCSV(self):
         """Generate a CSV file."""
-        io.export_csv(
+        io_utils.export_csv(
             subject_id=self.subject_id,
             data_dir=self.data_dir,
             stats_dict=self.stats_dict,
@@ -375,9 +379,9 @@ class GRESubject(object):
             self.data_dir, constants.OutputPaths.GRE_VENT_BINNING_NII
         )
 
-        io.export_nii(self.mask_reg, pathOutputcombinedmask)
-        io.export_nii(self.proton_reg, pathOutputregproton)
-        io.export_nii(self.ventilation_raw, pathOutputvent)
-        io.export_nii(self.ventilation_cor, pathOutputventcor)
-        io.export_nii(self.ventilation_binning, pathOutputventbinning)
+        io_utils.export_nii(self.mask_reg, pathOutputcombinedmask)
+        io_utils.export_nii(self.proton_reg, pathOutputregproton)
+        io_utils.export_nii(self.ventilation_raw, pathOutputvent)
+        io_utils.export_nii(self.ventilation_cor, pathOutputventcor)
+        io_utils.export_nii(self.ventilation_binning, pathOutputventbinning)
         self.saveMat()

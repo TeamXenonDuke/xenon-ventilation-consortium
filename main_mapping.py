@@ -5,7 +5,7 @@ import pdb
 from absl import app, flags
 from ml_collections import config_dict, config_flags
 
-from classmap_gre import GRESubject
+from subject_classmap import GRESubject
 
 FLAGS = flags.FLAGS
 

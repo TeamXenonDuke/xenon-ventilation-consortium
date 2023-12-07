@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from absl import app, flags
 
-from utils import constants, io
+from utils import constants, io_utils
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("image_type", "vent", "either ute or vent for segmentation")
@@ -108,7 +108,7 @@ def main(argv):
     image_type = FLAGS.image_type
     mask = evaluate(image)
     export_path = os.path.dirname(FLAGS.nii_filename) + "/mask.nii"
-    io.export_nii(image=mask.astype("float64"), path=export_path)
+    io_utils.export_nii(image=mask.astype("float64"), path=export_path)
 
 
 if __name__ == "__main__":

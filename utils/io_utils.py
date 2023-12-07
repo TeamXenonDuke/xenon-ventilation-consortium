@@ -139,6 +139,8 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
         if not fname.startswith(".")
         and (fname.endswith(".dcm") or fname.endswith(".IMA"))
     ]
+
+    assert len(files) > 0, "No dicom files found in the directory."
     # sort files by file name
     files = sorted(files, reverse=False)
     RefDs = pydicom.dcmread(files[0])
@@ -253,13 +255,13 @@ def export_3DRGB2nii(
     color_matrix = np.copy(image).astype("uint8")
     color_slice = np.zeros((128, 128, 3)).astype("uint8")
     # some fancy and tricky re-arrange
-    for ii in range(0, n_slice):
-        color_slice = np.copy(color[:, :, ii, :])
+    for i in range(0, n_slice):
+        color_slice = np.copy(color[:, :, i, :])
         color_slice = np.transpose(color_slice, [2, 0, 1])
         cline = np.reshape(color_slice, (1, np.size(color_slice)))
         color_slice = np.reshape(cline, [128, 128, 3], order="A")
         color_slice = np.transpose(color_slice, [1, 0, 2])
-        color_matrix[:, :, ii, :] = color_slice.copy()
+        color_matrix[:, :, i, :] = color_slice.copy()
     # stack the RGB channels
     shape_3d = image.shape[0:3]
     rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
@@ -270,8 +272,8 @@ def export_3DRGB2nii(
 def export_montage_gray(
     image: np.ndarray,
     path: str,
-    min: float,
-    max: float,
+    min_value: float,
+    max_value: float,
     ind_start: int,
     ind_inter: int,
     rotate_img: Optional[bool] = True,
@@ -288,7 +290,7 @@ def export_montage_gray(
         rotate_img (bool): rotate image by 270 deg and flip
     """
     n_row = constants._NUM_ROWS_GRE_MONTAGE
-    n_col = constants._NUM_COLS_GRE_MONTAGE
+    n_col = min(constants._NUM_COLS_GRE_MONTAGE, image.shape[2] // 2)
     # rotate images
     if rotate_img:
         image = np.rot90(image, 3)
@@ -299,7 +301,7 @@ def export_montage_gray(
     plt.gca().set_axis_off()
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     plt.margins(0, 0)
-    plt.imshow(img_montage, cmap="gray", vmin=min, vmax=max)
+    plt.imshow(img_montage, cmap="gray", vmin=min_value, vmax=max_value)
     plt.axis("off")
     plt.savefig(path, bbox_inches="tight", pad_inches=0.0, dpi=300)
     plt.clf()
@@ -344,8 +346,8 @@ def export_montage_overlay(
     # get the image shape
     img_w, img_h, img_n = np.shape(image_bin)
     n_row = constants._NUM_ROWS_GRE_MONTAGE
-    n_col = constants._NUM_COLS_GRE_MONTAGE
-    n_slice = constants._NUM_SLICE_GRE_MONTAGE
+    n_col = min(constants._NUM_COLS_GRE_MONTAGE, img_n // 2)
+    n_slice = min(img_n, constants._NUM_SLICE_GRE_MONTAGE)
     ind_end = ind_start + ind_inter * slices
     # initialize 4D image
     colormap = np.zeros((img_w, img_h, img_n, 3))
