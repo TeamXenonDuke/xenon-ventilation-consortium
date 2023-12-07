@@ -158,8 +158,8 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
             1
         ]  # save the pixel size (#4 for vent, #2 for proton)
     else:
-        slicethickness = constants._DEFAULT_SLICE_THICKNESS
-        pixelsize = constants._DEFAULT_PIXEL_SIZE
+        slicethickness = constants.DEFAULT_SLICE_THICKNESS
+        pixelsize = constants.DEFAULT_PIXEL_SIZE
 
     acquisition_date = RefDs.ContentDate
 
@@ -289,8 +289,8 @@ def export_montage_gray(
         ind_inter: int index spacing
         rotate_img (bool): rotate image by 270 deg and flip
     """
-    n_row = constants._NUM_ROWS_GRE_MONTAGE
-    n_col = min(constants._NUM_COLS_GRE_MONTAGE, image.shape[2] // 2)
+    n_row = constants.NUM_ROWS_GRE_MONTAGE
+    n_col = min(constants.NUM_COLS_GRE_MONTAGE, image.shape[2] // 2)
     # rotate images
     if rotate_img:
         image = np.rot90(image, 3)
@@ -345,9 +345,9 @@ def export_montage_overlay(
     image_background[image_background > 1] = 1
     # get the image shape
     img_w, img_h, img_n = np.shape(image_bin)
-    n_row = constants._NUM_ROWS_GRE_MONTAGE
-    n_col = min(constants._NUM_COLS_GRE_MONTAGE, img_n // 2)
-    n_slice = min(img_n, constants._NUM_SLICE_GRE_MONTAGE)
+    n_row = constants.NUM_ROWS_GRE_MONTAGE
+    n_col = min(constants.NUM_COLS_GRE_MONTAGE, img_n // 2)
+    n_slice = min(img_n, constants.NUM_SLICE_GRE_MONTAGE)
     ind_end = ind_start + ind_inter * slices
     # initialize 4D image
     colormap = np.zeros((img_w, img_h, img_n, 3))

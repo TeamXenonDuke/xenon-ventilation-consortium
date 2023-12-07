@@ -125,7 +125,7 @@ class GRESubject(object):
         self.HFOV = out_dict[constants.IOFields.FOV]
         self.acquisition_time_H = out_dict[constants.IOFields.SCAN_DATE]
 
-        self.FOVdim = constants._FOVDIMSCALE * max(self.HFOV, self.xefov)
+        self.FOVdim = constants.FOVDIMSCALE * max(self.HFOV, self.xefov)
 
         self.ventilation = misc.scale2match(
             image=self.ventilation_raw,
@@ -199,7 +199,7 @@ class GRESubject(object):
             self.mask_reg = (
                 self.ventilation
                 > np.percentile(
-                    self.ventilation, constants._VEN_PERCENTILE_THRESHOLD_SEG
+                    self.ventilation, constants.VEN_PERCENTILE_THRESHOLD_SEG
                 )
             ).astype(bool)
             self.mask_reg = misc.remove_small_objects(self.mask_reg).astype("float64")
@@ -234,7 +234,7 @@ class GRESubject(object):
             image=abs(self.ventilation_cor),
             bin_threshold=bin_threshold,
             mask=self.mask_reg,
-            percentile=constants._VEN_PERCENTILE_RESCALE,
+            percentile=constants.VEN_PERCENTILE_RESCALE,
         )
 
     def generate_statistics(self):
@@ -298,7 +298,7 @@ class GRESubject(object):
             ind_inter=ind_inter,
             min_value=np.percentile(np.abs(self.ventilation_raw), 0).astype(float),
             max_value=np.percentile(
-                np.abs(self.ventilation_raw), constants._VEN_PERCENTILE_RESCALE
+                np.abs(self.ventilation_raw), constants.VEN_PERCENTILE_RESCALE
             ).astype(float),
         )
         io_utils.export_montage_gray(
@@ -310,7 +310,7 @@ class GRESubject(object):
             ind_inter=ind_inter,
             min_value=np.percentile(abs(self.proton_reg), 0).astype(float),
             max_value=np.percentile(
-                abs(self.proton_reg), constants._PROTON_PERCENTILE_RESCALE
+                abs(self.proton_reg), constants.PROTON_PERCENTILE_RESCALE
             ).astype(float),
         )
         io_utils.export_montage_gray(
@@ -320,7 +320,7 @@ class GRESubject(object):
             ind_inter=ind_inter,
             min_value=np.percentile(abs(self.ventilation_cor), 0).astype(float),
             max_value=np.percentile(
-                abs(self.ventilation_cor), constants._VEN_PERCENTILE_RESCALE
+                abs(self.ventilation_cor), constants.VEN_PERCENTILE_RESCALE
             ).astype(float),
         )
 
@@ -328,7 +328,7 @@ class GRESubject(object):
             self.ventilation_cor,
             method=constants.NormalizationMethods.PERCENTILE,
             mask=self.mask_reg.astype(bool),
-            percentile=constants._VEN_PERCENTILE_RESCALE,
+            percentile=constants.VEN_PERCENTILE_RESCALE,
         )[self.mask_reg.astype(bool)]
         io_utils.export_histogram(
             data=data,

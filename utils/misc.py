@@ -82,6 +82,7 @@ def _interpTo(image: np.ndarray, dim: List[Any]):
 
 def scale2match(image: np.ndarray, pixelsize: float, fov: float) -> np.ndarray:
     """Scale and resize ventilation image to numpy array.
+    TODO: Rename this function properly.
 
     Args:
         image: np.ndarray image to be scaled and resized
@@ -176,7 +177,7 @@ def get_start_interval(mask: np.ndarray, scan_type: str) -> Tuple[int, int]:
         scan_type == constants.ScanType.GRE.value
         or scan_type == constants.ScanType.SPIRAL.value
     ):
-        num_slice = constants._NUM_SLICE_GRE_MONTAGE
+        num_slice = constants.NUM_SLICE_GRE_MONTAGE
         binary_arr = sum_line > -1
     else:
         raise ValueError("Invalid scan type.")

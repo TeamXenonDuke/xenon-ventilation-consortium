@@ -27,6 +27,7 @@ def fSNR_3T(image: np.ndarray, mask: np.ndarray) -> Tuple[float, ...]:
     xybe = 0
     mini_cube_dim = [8, 8, 8]
     my_dim = np.shape(image)
+
     # dilate the mask to analyze noise area away from the signal
     def util(x):
         return int((math.ceil(x * 0.025) * 2 + 1))
@@ -56,7 +57,6 @@ def fSNR_3T(image: np.ndarray, mask: np.ndarray) -> Tuple[float, ...]:
     for ii in range(0, int(my_dim[0] / mini_x)):
         for jj in range(0, int(my_dim[1] / mini_y)):
             for kk in range(0, int(my_dim[2] / mini_z)):
-
                 mini_cube_noise_dist = noise_temp[
                     ii * mini_x : (ii + 1) * mini_x,
                     jj * mini_y : (jj + 1) * mini_y,
@@ -77,7 +77,7 @@ def fSNR_3T(image: np.ndarray, mask: np.ndarray) -> Tuple[float, ...]:
     image_noise = float(np.median(std_dev_mini_noise_vol))
     image_signal = float(np.average(image[mask]))
     SNR = float(image_signal / image_noise) if image_noise > 0 else np.inf
-    SNR_Rayleigh = float(SNR * constants._RAYLEIGH_FACTOR)
+    SNR_Rayleigh = float(SNR * constants.RAYLEIGH_FACTOR)
     return SNR, SNR_Rayleigh, image_signal, image_noise
 
 
@@ -125,6 +125,6 @@ def inflation_volume_2D(mask: np.ndarray, fov: float, slice_thickness: float) ->
     """
     return np.multiply(
         np.sum(mask),
-        (fov**2 / np.shape(mask)[0] ** 2 / constants._FOVINFLATIONSCALE2D)
+        (fov**2 / np.shape(mask)[0] ** 2 / constants.FOVINFLATIONSCALE2D)
         * slice_thickness,
     )
