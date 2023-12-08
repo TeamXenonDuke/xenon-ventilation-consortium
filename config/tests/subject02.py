@@ -19,8 +19,9 @@ class Config(config_dict.ConfigDict):
         self.bias_key = constants.BiasfieldKey.N4ITK.value
         self.data_dir = "assets/tests/subject02/"
         self.manual_reg_dir = ""
-        self.manual_seg_dir = (
-            "/mnt/d/Patients/102007_w24/Dedicated_Ventilation/GRE_mask_manual.nii"
+        self.manual_seg_dir = "assets/tests/subject02/mask_manual.nii"
+        self.xenon_dicom_dir = os.path.join(
+            self.data_dir, "GRE_129XE_VENT_COR_BREATH-HOLD_0005"
         )
         self.processes = Process()
         self.proton_dicom_dir = os.path.join(
@@ -28,12 +29,9 @@ class Config(config_dict.ConfigDict):
         )
         self.registration_key = constants.RegistrationKey.SKIP.value
         self.scan_type = constants.ScanType.GRE.value
-        self.segmentation_key = constants.SegmentationKey.CNN_PROTON.value
+        self.segmentation_key = constants.SegmentationKey.MANUAL_VENT.value
         self.site = constants.Site.UVA.value
         self.subject_id = "CTSA-41"
-        self.xenon_dicom_dir = os.path.join(
-            self.data_dir, "GRE_129XE_VENT_COR_BREATH-HOLD_0005"
-        )
         self.lock()
 
 
