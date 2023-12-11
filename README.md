@@ -1,4 +1,4 @@
-# xenon_ventilation
+# Xenon Ventilation Imaging
 
 The ventilation imaging pipeline, developed at the [Driehuyslab](https://sites.duke.edu/driehuyslab/), processes MRI DICOM data and produces a summary report to analyze the functionality of the human lung. This README presents the installation procedure of the pipeline. Before moving to the installation process, download or clone this repository on your computer.
 
