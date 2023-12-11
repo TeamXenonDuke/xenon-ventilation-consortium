@@ -16,22 +16,21 @@ class Config(config_dict.ConfigDict):
     def __init__(self):
         """Initialize config parameters."""
         super().__init__()
-        self.bias_key = constants.BiasfieldKey.N4ITK.value
+        self.subject_id = "test"
         self.data_dir = "assets/tests/subject02/"
-        self.manual_reg_dir = ""
-        self.manual_seg_dir = "assets/tests/subject02/mask_manual.nii"
         self.xenon_dicom_dir = os.path.join(
             self.data_dir, "GRE_129XE_VENT_COR_BREATH-HOLD_0005"
         )
-        self.processes = Process()
         self.proton_dicom_dir = os.path.join(
             self.data_dir, "GRE_1H_VENT_COR_BREATH-HOLD_0004"
         )
+        self.segmentation_key = constants.SegmentationKey.MANUAL_VENT.value
+        self.manual_seg_dir = "assets/tests/subject02/mask_manual.nii"
+        self.bias_key = constants.BiasfieldKey.N4ITK.value
         self.registration_key = constants.RegistrationKey.SKIP.value
         self.scan_type = constants.ScanType.GRE.value
-        self.segmentation_key = constants.SegmentationKey.MANUAL_VENT.value
         self.site = constants.Site.UVA.value
-        self.subject_id = "CTSA-41"
+        self.processes = Process()
         self.lock()
 
 
