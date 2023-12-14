@@ -135,6 +135,7 @@ class ScanType(enum.Enum):
 
     GRE = "gre"
     SPIRAL = "spiral"
+    RADIAL = "radial"
 
 
 class Site(enum.Enum):
@@ -221,8 +222,12 @@ class REFERENCESTATS(object):
 class NormalizationMethods(object):
     """Image normalization methods."""
 
-    VANILLA = "vanilla"
+    # VANILLA = "vanilla"
+    # PERCENTILE = "percentile"
+    MAX = "max"
+    PERCENTILE_MASKED = "percentile_masked"
     PERCENTILE = "percentile"
+    MEAN = "mean"
 
 
 class BIN2COLORMAP(object):

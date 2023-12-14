@@ -7,10 +7,11 @@ from ml_collections import config_dict
 sys.path.append("..")
 import os
 
+from config import base_config
 from utils import constants
 
 
-class Config(config_dict.ConfigDict):
+class Config(base_config.Config):
     """Base config file."""
 
     def __init__(self):
@@ -34,7 +35,7 @@ class Config(config_dict.ConfigDict):
         self.lock()
 
 
-class Process(object):
+class Process(base_config.Process):
     """Define the evaluation processes."""
 
     def __init__(self):

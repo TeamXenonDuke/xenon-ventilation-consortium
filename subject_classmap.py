@@ -251,6 +251,7 @@ class GRESubject(object):
         if (
             self.scan_type == constants.ScanType.GRE.value
             or self.scan_type == constants.ScanType.SPIRAL.value
+            or self.scan_type == constants.ScanType.RADIAL.value
         ):
             inflation_volume = metrics.inflation_volume_2D(
                 self.mask_reg, self.xefov, self.xenonslicethickness
@@ -276,8 +277,8 @@ class GRESubject(object):
         ## make montage, plot histogram, and generate report
         index2color = constants.BIN2COLORMAP.VENT_BIN2COLOR_MAP
         # Get start/stop intervals
-        ind_start, ind_inter = misc.get_start_interval(
-            mask=self.mask_reg, scan_type=self.scan_type
+        ind_start, ind_inter = misc.get_plot_indices(
+            image=self.mask_reg, scan_type=self.config.scan_type
         )
         # export montages
         io_utils.export_montage_overlay(
@@ -292,36 +293,36 @@ class GRESubject(object):
             ind_inter=ind_inter,
         )
         io_utils.export_montage_gray(
-            image=self.ventilation_raw,
+            image=misc.normalize(
+                np.abs(self.ventilation_raw),
+                self.mask_reg,
+                method=constants.NormalizationMethods.MAX,
+            ),
             path=os.path.join(self.data_dir, constants.OutputPaths.VEN_COR_MONTAGE_PNG),
             ind_start=ind_start,
             ind_inter=ind_inter,
-            min_value=np.percentile(np.abs(self.ventilation_raw), 0).astype(float),
-            max_value=np.percentile(
-                np.abs(self.ventilation_raw), constants.VEN_PERCENTILE_RESCALE
-            ).astype(float),
         )
         io_utils.export_montage_gray(
-            image=self.proton_reg,
+            image=misc.normalize(
+                np.abs(self.proton_reg),
+                self.mask_reg,
+                method=constants.NormalizationMethods.MAX,
+            ),
             path=os.path.join(
                 self.data_dir, constants.OutputPaths.PROTON_REG_MONTAGE_PNG
             ),
             ind_start=ind_start,
             ind_inter=ind_inter,
-            min_value=np.percentile(abs(self.proton_reg), 0).astype(float),
-            max_value=np.percentile(
-                abs(self.proton_reg), constants.PROTON_PERCENTILE_RESCALE
-            ).astype(float),
         )
         io_utils.export_montage_gray(
-            image=self.ventilation_cor,
+            image=misc.normalize(
+                np.abs(self.ventilation_cor),
+                self.mask_reg,
+                method=constants.NormalizationMethods.MAX,
+            ),
             path=os.path.join(self.data_dir, constants.OutputPaths.VEN_COR_MONTAGE_PNG),
             ind_start=ind_start,
             ind_inter=ind_inter,
-            min_value=np.percentile(abs(self.ventilation_cor), 0).astype(float),
-            max_value=np.percentile(
-                abs(self.ventilation_cor), constants.VEN_PERCENTILE_RESCALE
-            ).astype(float),
         )
 
         data = misc.normalize(

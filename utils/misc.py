@@ -131,12 +131,15 @@ def scale2match(image: np.ndarray, pixelsize: float, fov: float) -> np.ndarray:
     return scaled_image.astype("float64")
 
 
-def _get_index_max_ones(arr: np.ndarray) -> Tuple[int, int]:
-    """Calculate starting index and ending index of the max consecutive ones.
+def get_biggest_island_indices(arr: np.ndarray) -> Tuple[int, int]:
+    """Get the start and stop indices of the biggest island in the array.
 
     Args:
-        arr: 1D array
+        arr (np.ndarray): binary array of 0s and 1s.
+    Returns:
+        Tuple of start and stop indices of the biggest island.
     """
+    # intitialize count
     cur_count = 0
     cur_start = 0
 
@@ -145,11 +148,10 @@ def _get_index_max_ones(arr: np.ndarray) -> Tuple[int, int]:
 
     index_start = 0
     index_end = 0
-
     for i in range(0, np.size(arr)):
         if arr[i] == 0:
             cur_count = 0
-            if (pre_state == 1) and (cur_start == index_start):
+            if (pre_state == 1) & (cur_start == index_start):
                 index_end = i - 1
             pre_state = 0
 
@@ -165,6 +167,38 @@ def _get_index_max_ones(arr: np.ndarray) -> Tuple[int, int]:
     return index_start, index_end
 
 
+def get_plot_indices(image: np.ndarray, scan_type: str) -> Tuple[int, int]:
+    """Get the indices to plot the image.
+
+    Args:
+        image (np.ndarray): binary image.
+        scan_type (str): scan_type
+    Returns:
+        Tuple of start and interval indices.
+    """
+    sum_line = np.sum(np.sum(image, axis=0), axis=0)
+    if (
+        scan_type == constants.ScanType.GRE.value
+        or scan_type == constants.ScanType.SPIRAL.value
+    ):
+        index_start, index_end = get_biggest_island_indices(sum_line >= 0)
+        flt_inter = (index_end - index_start) // constants.NUM_SLICE_GRE_MONTAGE
+    elif scan_type == constants.ScanType.RADIAL.value:
+        index_start, index_end = get_biggest_island_indices(sum_line > 0)
+        flt_inter = (index_end - index_start) // constants.NUM_SLICE_GRE_MONTAGE
+
+    # threshold to decide interval number
+    if np.modf(flt_inter)[0] > 0.4:
+        index_skip = np.ceil(flt_inter).astype(int)
+    else:
+        index_skip = np.floor(flt_inter).astype(int)
+
+    # insure that index_skip is at least 1
+    index_skip = max(1, index_skip)
+
+    return index_start, index_skip
+
+
 def get_start_interval(mask: np.ndarray, scan_type: str) -> Tuple[int, int]:
     """Determine the starting slice index and the interval to display the montage.
 
@@ -177,28 +211,26 @@ def get_start_interval(mask: np.ndarray, scan_type: str) -> Tuple[int, int]:
         scan_type == constants.ScanType.GRE.value
         or scan_type == constants.ScanType.SPIRAL.value
     ):
-        num_slice = constants.NUM_SLICE_GRE_MONTAGE
         binary_arr = sum_line > -1
+        ind_start, ind_end = get_biggest_island_indices(binary_arr)
+        flt_inter = (ind_end - ind_start) / constants.NUM_SLICE_GRE_MONTAGE
+
+        # use 0.4 as a threshold to decide interval number
+        if np.modf(flt_inter)[0] > 0.4:
+            ind_inter = np.ceil(flt_inter).astype(int)
+        else:
+            ind_inter = np.floor(flt_inter).astype(int)
+        # insure that ind_inter is at least 1
+        ind_inter = max(1, ind_inter)
     else:
         raise ValueError("Invalid scan type.")
-    ind_start, ind_end = _get_index_max_ones(binary_arr)
-
-    flt_inter = (ind_end - ind_start) / num_slice
-
-    # use 0.4 as a threshold to decide interval number
-    if np.modf(flt_inter)[0] > 0.4:
-        ind_inter = np.ceil(flt_inter).astype(int)
-    else:
-        ind_inter = np.floor(flt_inter).astype(int)
-    # insure that ind_inter is at least 1
-    ind_inter = max(1, ind_inter)
     return ind_start, ind_inter
 
 
 def normalize(
     image: np.ndarray,
-    method: str,
     mask: np.ndarray = np.array([0.0]),
+    method: str = constants.NormalizationMethods.PERCENTILE_MASKED,
     percentile: float = 99.0,
 ) -> np.ndarray:
     """Normalize the image to be between [0, 1.0].
@@ -213,13 +245,19 @@ def normalize(
     Returns:
         np.ndarray: normalized image
     """
-    if method == constants.NormalizationMethods.VANILLA:
+    if method == constants.NormalizationMethods.MAX:
         return image * 1.0 / np.max(image)
     elif method == constants.NormalizationMethods.PERCENTILE:
+        return image * 1.0 / np.percentile(image, percentile)
+    elif method == constants.NormalizationMethods.PERCENTILE_MASKED:
         image_thre = np.percentile(image[mask], percentile)
         image_n = np.divide(np.multiply(image, mask), image_thre)
         image_n[image_n > 1] = 1
         return image_n
+    elif method == constants.NormalizationMethods.MEAN:
+        image[np.isnan(image)] = 0
+        image[np.isinf(image)] = 0
+        return image / np.mean(image[mask])
     else:
         raise ValueError("Invalid normalization method")
 
