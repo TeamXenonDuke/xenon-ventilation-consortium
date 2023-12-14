@@ -45,7 +45,7 @@ def gasBinning(
     # rescale
     image_n = misc.normalize(
         image,
-        method=constants.NormalizationMethods.PERCENTILE,
+        method=constants.NormalizationMethods.PERCENTILE_MASKED,
         mask=mask.astype(bool),
         percentile=percentile,
     )

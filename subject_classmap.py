@@ -327,7 +327,7 @@ class GRESubject(object):
 
         data = misc.normalize(
             self.ventilation_cor,
-            method=constants.NormalizationMethods.PERCENTILE,
+            method=constants.NormalizationMethods.PERCENTILE_MASKED,
             mask=self.mask_reg.astype(bool),
             percentile=constants.VEN_PERCENTILE_RESCALE,
         )[self.mask_reg.astype(bool)]

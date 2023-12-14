@@ -52,56 +52,6 @@ def _adj_format2(x: float) -> str:
     return np.around(x, decimals=2).astype(str)
 
 
-def _montage(
-    image: np.ndarray, ind_start: int, ind_inter: int, n_row: int, n_col: int
-) -> np.ndarray:
-    """Stack images into an image montage.
-
-    Args:
-        image (np.ndarray): 3D or 4D image volume of shape (H, W, N)
-        ind_start (int): starting index
-        ind_inter (int): index spacing
-        n_row (int): number of rows in the montage
-        n_col (int): number of columns in the montage
-
-    Returns:
-        np.ndarray: _description_
-    """
-    img_w = image.shape[0]
-    img_h = image.shape[1]
-    slices = n_row * n_col
-    ind_end = ind_start + ind_inter * slices
-    if image.ndim == 3:
-        image = np.expand_dims(image, axis=-1)
-        img_montage = np.zeros((n_row * img_h, n_col * img_w, 1))
-    elif image.ndim == 4:
-        img_montage = np.zeros((n_row * img_h, n_col * img_w, 3))
-    else:
-        raise ValueError("Invalid image dimensions. Must be either 3 or 4.")
-    # image_reslice = abs(image[:, :, ind_start:ind_end:ind_inter, :])
-    image_reslice = abs(image)
-    slice = 0
-    for j in range(n_row):
-        for k in range(n_col):
-            # if reached number of desired montage slices, terminate loop
-            if slice >= slices:
-                break
-
-            # add images to montage slices, add black image if more montage slices than images
-            sliceN, sliceM = j * img_h, k * img_w
-            if slice < image_reslice.shape[2]:
-                img_montage[
-                    sliceN : sliceN + img_h, sliceM : sliceM + img_w, :
-                ] = image_reslice[:, :, slice, :]
-            else:
-                img_montage[
-                    sliceN : sliceN + img_h, sliceM : sliceM + img_w, :
-                ] = np.zeros(image_reslice[:, :, 0, :].shape)
-            slice += 1
-
-    return np.squeeze(img_montage)
-
-
 def make_montage(image: np.ndarray, n_slices: int = 14) -> np.ndarray:
     """Make montage of the image.
 
@@ -395,8 +345,6 @@ def export_montage_overlay(
     image_background[image_background > 1] = 1
     # get the image shape
     img_w, img_h, img_n = np.shape(image_bin)
-    n_row = constants.NUM_ROWS_GRE_MONTAGE
-    n_col = min(constants.NUM_COLS_GRE_MONTAGE, img_n // 2)
     n_slice = min(img_n, constants.NUM_SLICE_GRE_MONTAGE)
     ind_end = ind_start + ind_inter * slices
     # initialize 4D image
