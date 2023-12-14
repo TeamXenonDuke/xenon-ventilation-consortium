@@ -143,19 +143,19 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
     # Load dimensions based on the number of rows, columns, and slices (along the Z axis)
     ConstPixelDims = (int(RefDs.Columns), int(RefDs.Rows), len(files))
 
-    # if scan_type == constants.ScanType.GRE.value:
-    #     slicethickness = RefDs.SpacingBetweenSlices
-    #     pixelsize = RefDs.PixelSpacing[
-    #         1
-    #     ]  # save the pixel size (#4 for vent, #2 for proton)
-    # elif scan_type == constants.ScanType.SPIRAL.value:
-    #     slicethickness = RefDs.SliceThickness
-    #     pixelsize = RefDs.PixelSpacing[
-    #         1
-    #     ]  # save the pixel size (#4 for vent, #2 for proton)
-    # else:
-    slicethickness = constants.DEFAULT_SLICE_THICKNESS
-    pixelsize = constants.DEFAULT_PIXEL_SIZE
+    if scan_type == constants.ScanType.GRE.value:
+        slicethickness = RefDs.SpacingBetweenSlices
+        pixelsize = RefDs.PixelSpacing[
+            1
+        ]  # save the pixel size (#4 for vent, #2 for proton)
+    elif scan_type == constants.ScanType.SPIRAL.value:
+        slicethickness = RefDs.SliceThickness
+        pixelsize = RefDs.PixelSpacing[
+            1
+        ]  # save the pixel size (#4 for vent, #2 for proton)
+    elif scan_type == constants.ScanType.RADIAL.value:
+        slicethickness = constants.DEFAULT_SLICE_THICKNESS
+        pixelsize = constants.DEFAULT_PIXEL_SIZE
 
     acquisition_date = RefDs.ContentDate
 
