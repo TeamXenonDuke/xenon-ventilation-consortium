@@ -238,6 +238,6 @@ Warning: this is the Team Xenon workflow only. Other users do not have to follow
 
 Original Author: Mu He
 
-Past and current Developers: Ziyi Wang, David Mummy, Junlan Lu, Suphachart Leewiwatwong, Isabelle Dummer, and Sakib Kabir.
+Past and current Developers: Ziyi Wang, David Mummy, Junlan Lu, Aryil Bechtel, Suphachart Leewiwatwong, Isabelle Dummer, and Sakib Kabir.
 
 Correspondence: Junlan Lu (junlan.lu@duke.edu) ; David Mummy (david.mummy@duke.edu)
