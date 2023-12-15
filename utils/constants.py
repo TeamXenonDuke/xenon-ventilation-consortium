@@ -33,6 +33,7 @@ class IOFields(object):
     PROTON_DICOM_DIR = "proton_dicom_dir"
     PROTON_REG_NII = "proton_reg_nii"
     RAW_PROTON_MONTAGE = "raw_proton_montage"
+    REFERENCE_DATA_KEY = "reference_data_key"
     REGISTRATION_KEY = "registration_key"
     SCAN_DATE = "scan_date"
     SCAN_TYPE = "scan_type"
@@ -106,6 +107,20 @@ class SegmentationKey(enum.Enum):
     MANUAL_VENT = "manual_vent"
     MANUAL_PROTON = "manual_proton"
     THRESHOLD_VENT = "threshold_vent"
+
+
+class ReferenceDataKey(enum.Enum):
+    """Reference data flags.
+
+    Defines which reference data to use. Options:
+    GRE_2D: Reference data for 2D GRE
+    RADIAL_2D: Rerence data for 3D radial
+    DEFAULT: Default reference data used
+    MANUAL: Use when manualy adjusting default reference data
+    """
+
+    MANUAL = "manual"
+    DEFAULT = "default"
 
 
 class RegistrationKey(enum.Enum):
@@ -196,36 +211,6 @@ class PDFOPTIONS(object):
         "encoding": "UTF-8",
         "enable-local-file-access": None,
     }
-
-
-# TODO: Move to config file.
-class REFERENCESTATS(object):
-    """Reference statistics."""
-
-    ref_stats_ven_gre_dict = {
-        "r_ven_defect_ave": "2.6",
-        "r_ven_defect_std": "1.8",
-        "r_ven_low_ave": "17.5",
-        "r_ven_low_std": "5.7",
-        "r_ven_high_ave": "16.7",
-        "r_ven_high_std": "3.3",
-        "r_ven_skewness_ave": "0",
-        "r_ven_skewness_std": "0.11",
-        "r_ven_CV_ave": "0.37",
-        "r_ven_CV_std": "0.04",
-        "r_ven_tcv_ave": "3.8",
-        "r_ven_tcv_std": "0.6",
-    }
-
-    REF_MEAN_VENT = 0.58
-    REF_STD_VENT = 0.19
-    REF_BINS_VEN_GRE = [
-        REF_MEAN_VENT - 2 * REF_STD_VENT,
-        REF_MEAN_VENT - REF_STD_VENT,
-        REF_MEAN_VENT,
-        REF_MEAN_VENT + REF_STD_VENT,
-        REF_MEAN_VENT + 2 * REF_STD_VENT,
-    ]
 
 
 class NormalizationMethods(object):

@@ -115,7 +115,7 @@ def predict_3d(
     image_type: str = constants.ImageType.VENT.value,
     erosion: int = 0,
 ) -> np.ndarray:
-    """Generate a segmentation mask from the proton or ventilation image.
+    """Generate a segmentation mask from a 3D proton or ventilation image.
 
     Args:
         image: np.nd array of the input image to be segmented.

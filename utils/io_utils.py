@@ -442,14 +442,19 @@ def export_histogram(
 
 
 def export_html_pdf_vent(
-    subject_id: str, data_dir: str, stats_dict: Dict[str, Any], scan_type: str
+    subject_id: str,
+    data_dir: str,
+    stats_dict: Dict[str, Any],
+    ref_dict: Dict[str, Any],
+    scan_type: str,
 ):
     """Render HTML and PDF file using templates and reference values.
 
     Args:
         subject_id (str): subject id name
         data_dir (str): output data directoy
-        stats_dict (Dict[str, Any]): dictionary of reference values
+        stats_dict (Dict[str, Any]): dictionary of subject stats
+        ref_dict (Dict[str, Ant]): dictionary of reference stats
         scan_type (str): scan type
     """
     wd = os.path.join(os.path.dirname(__file__), "..")
@@ -502,7 +507,7 @@ def export_html_pdf_vent(
         constants.IOFields.SCAN_TYPE: scan_type.upper(),
     }
 
-    html_dict.update(constants.REFERENCESTATS.ref_stats_ven_gre_dict)
+    html_dict.update(ref_dict)
     with open(temp_clinical, "r") as f:
         data = f.read()
         rendered = data.format(**html_dict)

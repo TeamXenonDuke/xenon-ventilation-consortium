@@ -238,7 +238,7 @@ class GRESubject(object):
 
     def gas_binning(self):
         """Bin ventilation image to colormap bins."""
-        bin_threshold = constants.REFERENCESTATS.REF_BINS_VEN_GRE
+        bin_threshold = self.config.reference_data.ref_bins_ven
         (
             self.ventilation,
             self.ventilation_binning,
@@ -360,6 +360,7 @@ class GRESubject(object):
             subject_id=self.subject_id,
             data_dir=self.data_dir,
             stats_dict=self.stats_dict,
+            ref_dict=self.config.reference_data.ref_stats_ven_dict,
             scan_type=self.scan_type,
         )
 
