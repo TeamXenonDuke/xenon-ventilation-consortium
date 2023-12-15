@@ -77,7 +77,16 @@ class OutputPaths(object):
 class CNNPaths(object):
     """Paths to saved model files."""
 
-    DEFAULT = "GREModel_20190323.h5"
+    PROTON_2D = "GREModel_20190323.h5"
+    PROTON_3D = "model_ANATOMY_UTE.h5"
+    VENT_3D = "model_ANATOMY_VEN.h5"
+
+
+class ImageType(enum.Enum):
+    """Segmentation flags."""
+
+    VENT = "vent"
+    UTE = "ute"
 
 
 class SegmentationKey(enum.Enum):

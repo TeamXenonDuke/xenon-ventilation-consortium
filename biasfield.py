@@ -18,7 +18,9 @@ flags.DEFINE_string("mask_file", "", "nifti mask file path.")
 flags.DEFINE_string("output_path", "", "output folder location")
 
 
-def biasFieldCor(image: np.ndarray, mask: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def correct_biasfield_n4itk(
+    image: np.ndarray, mask: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
     """Apply N4ITK bias field correction.
 
     Args:
@@ -67,37 +69,6 @@ def biasFieldCor(image: np.ndarray, mask: np.ndarray) -> Tuple[np.ndarray, np.nd
     return image_cor.astype("float64"), image_biasfield.astype("float64")
 
 
-def biasFied_calc(
-    vent_half1: np.ndarray,
-    vent_half2: np.ndarray,
-    mask: np.ndarray,
-    num_excite: Union[int, float],
-) -> np.ndarray:
-    """Calculate bias field from the 2 back to back scans by calculating the relative
-    amount of RF-induced depolarization.
-
-    Args:
-        vent_half1: np.ndarray 3D image of the first temporal subdivision.
-        vent_half2: np.ndarray 3D image of the second temporal subdivision.
-        mask: np.ndarray 3D mask.
-        num_excite: int number of radial views.
-    """
-    vent_half1_sm = ndimage.filters.median_filter(input=abs(vent_half1), size=3)
-    vent_half2_sm = ndimage.filters.median_filter(input=abs(vent_half2), size=3)
-
-    FA_map = np.degrees(
-        np.arccos(np.power(np.divide(vent_half2_sm, vent_half1_sm), 1.0 / num_excite))
-    )
-    FA_map = np.nan_to_num(FA_map)
-    # apply 3D median filter
-    FA_map = ndimage.filters.median_filter(input=FA_map, size=4)
-
-    # replace 0 with mean value
-    FA_map[FA_map == 0] = np.mean(FA_map[mask])
-
-    return FA_map
-
-
 def main(argv):
     """Apply N4ITK bias field correction."""
     try:
@@ -108,7 +79,7 @@ def main(argv):
         mask = nib.load(FLAGS.mask_file).get_fdata()
     except:
         raise ValueError("not a valid filename")
-    image_cor, biasfield = biasFieldCor(image=image, mask=mask)
+    image_cor, biasfield = correct_biasfield_n4itk(image=image, mask=mask)
     image_cor_nii = nib.Nifti1Image(image_cor.astype(float), np.eye(4))
 
     if FLAGS.output_path:

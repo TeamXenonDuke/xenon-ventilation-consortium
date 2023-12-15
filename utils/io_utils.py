@@ -16,8 +16,6 @@ import pdf2image
 import pdfkit
 import pydicom
 import skimage
-
-# matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import rc, xlim, ylim
 

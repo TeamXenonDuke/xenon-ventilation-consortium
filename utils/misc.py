@@ -3,6 +3,8 @@
 import pdb
 import sys
 
+import cv2
+
 sys.path.append("..")
 from typing import Any, List, Tuple
 
@@ -277,3 +279,34 @@ def remove_small_objects(mask: np.ndarray, scale: float = 0.1):
     return skimage.morphology.remove_small_objects(
         ar=mask, min_size=min_size, connectivity=1
     ).astype("bool")
+
+
+def erode_image(image: np.ndarray, erosion: int) -> np.ndarray:
+    """Erode image.
+
+    Erodes image slice by slice.
+
+    Args:
+        image (np.ndarray): 3-D image to erode.
+        erosion (int): size of erosion kernel.
+    Returns:
+        Eroded image.
+    """
+    kernel = np.ones((erosion, erosion), np.uint8)
+    for i in range(image.shape[2]):
+        image[:, :, i] = cv2.erode(image[:, :, i], kernel, iterations=1)
+    return image
+
+
+def standardize_image(image: np.ndarray) -> np.ndarray:
+    """Standardize image.
+
+    Args:
+        image (np.ndarray): image to standardize.
+    Returns:
+        Standardized image.
+    """
+    image = np.abs(image)
+    image = 255 * (image - np.min(image)) / (np.max(image) - np.min(image))
+    image = (image - np.mean(image)) / np.std(image)
+    return image

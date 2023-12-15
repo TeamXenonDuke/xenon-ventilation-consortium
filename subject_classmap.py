@@ -181,9 +181,22 @@ class GRESubject(object):
         """Segment the thoracic cavity."""
         if self.segmentation_key == constants.SegmentationKey.CNN_PROTON.value:
             logging.info("Performing neural network segmenation.")
-            self.mask_reg = segmentation.evaluate(self.proton)
+            if (
+                self.scan_type == constants.ScanType.GRE.value
+                or self.scan_type == constants.ScanType.SPIRAL.value
+            ):
+                self.mask_reg = segmentation.predict_2d(self.proton)
+            elif self.scan_type == constants.ScanType.RADIAL.value:
+                pass
         elif self.segmentation_key == constants.SegmentationKey.CNN_VENT.value:
-            pass
+            logging.info("Performing neural network segmenation.")
+            if (
+                self.scan_type == constants.ScanType.GRE.value
+                or self.scan_type == constants.ScanType.SPIRAL.value
+            ):
+                pass
+            elif self.scan_type == constants.ScanType.RADIAL.value:
+                self.mask_reg = segmentation.predict_3d(self.ventilation)
         elif (
             self.segmentation_key == constants.SegmentationKey.MANUAL_VENT.value
             or self.segmentation_key == constants.SegmentationKey.MANUAL_PROTON.value
@@ -216,7 +229,7 @@ class GRESubject(object):
             (
                 self.ventilation_cor,
                 self.ventilation_biasfield,
-            ) = biasfield.biasFieldCor(
+            ) = biasfield.correct_biasfield_n4itk(
                 image=abs(self.ventilation),
                 mask=self.mask_reg.astype(bool),
             )
