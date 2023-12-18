@@ -35,6 +35,7 @@ class Process(base_config.Process):
 
     def __init__(self):
         """Initialize the process parameters."""
+        super().__init__()
         self.ventilation_mapping_gre = True
         self.ventilation_mapping_radial = False
 
