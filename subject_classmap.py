@@ -187,14 +187,18 @@ class GRESubject(object):
             ):
                 self.mask_reg = segmentation.predict_2d(self.proton)
             elif self.scan_type == constants.ScanType.RADIAL.value:
-                pass
+                raise NotImplementedError(
+                    "Neural network segmentation on Radial proton image not implemented."
+                )
         elif self.segmentation_key == constants.SegmentationKey.CNN_VENT.value:
             logging.info("Performing neural network segmenation.")
             if (
                 self.scan_type == constants.ScanType.GRE.value
                 or self.scan_type == constants.ScanType.SPIRAL.value
             ):
-                pass
+                raise NotImplementedError(
+                    "Neural network segmentation on 2D vent image not implemented."
+                )
             elif self.scan_type == constants.ScanType.RADIAL.value:
                 self.mask_reg = segmentation.predict_3d(self.ventilation)
         elif (
