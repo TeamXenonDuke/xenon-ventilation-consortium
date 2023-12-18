@@ -143,22 +143,25 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
 
     if scan_type == constants.ScanType.GRE.value:
         slicethickness = RefDs.SpacingBetweenSlices
-        pixelsize = RefDs.PixelSpacing[
-            1
-        ]  # save the pixel size (#4 for vent, #2 for proton)
+        pixelsize = np.array(
+            RefDs.PixelSpacing
+        )  # save the pixel size (#4 for vent, #2 for proton)
     elif scan_type == constants.ScanType.SPIRAL.value:
         slicethickness = RefDs.SliceThickness
-        pixelsize = RefDs.PixelSpacing[
-            1
-        ]  # save the pixel size (#4 for vent, #2 for proton)
+        pixelsize = np.array(
+            RefDs.PixelSpacing
+        )  # save the pixel size (#4 for vent, #2 for proton)
     elif scan_type == constants.ScanType.RADIAL.value:
+        # these are not currently in the 3D DICOM headers, so set to default for now
         slicethickness = constants.DEFAULT_SLICE_THICKNESS
-        pixelsize = constants.DEFAULT_PIXEL_SIZE
+        pixelsize = np.array(
+            [constants.DEFAULT_PIXEL_SIZE, constants.DEFAULT_PIXEL_SIZE]
+        )
 
     acquisition_date = RefDs.ContentDate
-
     dicom = np.zeros(ConstPixelDims)
-    fov = (max(int(RefDs.Columns), int(RefDs.Rows)) * pixelsize) / 10
+    fov = max(int(RefDs.Rows * pixelsize[0]), int(RefDs.Columns * pixelsize[1])) / 10
+
     for filename in files:
         # read the file
         ds = pydicom.read_file(filename)

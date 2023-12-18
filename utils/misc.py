@@ -82,55 +82,60 @@ def _interpTo(image: np.ndarray, dim: List[Any]):
     return interpolated
 
 
-def scale2match(image: np.ndarray, pixelsize: float, fov: float) -> np.ndarray:
-    """Scale and resize ventilation image to numpy array.
-    TODO: Rename this function properly.
+def standardize_image_axes(
+    image: np.ndarray, pixelsize: np.ndarray, fov: float
+) -> np.ndarray:
+    """Resize image such that x and y dimensions are of the same scale and length.
 
     Args:
-        image: np.ndarray image to be scaled and resized
-        pixelsize: float size of pixel
-        fov: float field of view size
+        image (np.array): np.ndarray image to be scaled and resized
+        pixelsize (np.array): array denoting row and column spacing of pixels in mm
+        fov (float): float field of view size
     Returns:
         np.ndarray of the scaled and resized image
     """
-    ## crop the ventilation image to x=y and scale to 128x128
-    scaled_image = np.zeros((128, 128, np.shape(image)[2])).astype("float64")
-    image_fullsize = np.zeros(
+    # resize image so that x and y array elements are spaced by 1 mm
+    image_rescaled = np.zeros(
         (
-            round(np.shape(image)[0] * pixelsize),
-            round(np.shape(image)[1] * pixelsize),
+            int(np.shape(image)[0] * pixelsize[1]),
+            int(np.shape(image)[1] * pixelsize[0]),
             np.shape(image)[2],
         )
     ).astype("float64")
-    image_final = np.zeros((int(fov), int(fov), np.shape(image)[2])).astype("float64")
     dim = [
-        round(np.shape(image)[0] * pixelsize) * 1j,
-        round(np.shape(image)[1] * pixelsize) * 1j,
+        int(np.shape(image)[0] * pixelsize[1]) * 1j,
+        int(np.shape(image)[1] * pixelsize[0]) * 1j,
         np.shape(image)[2] * 1j,
     ]
-    image_fullsize = _interpTo(image, dim)
+    image_rescaled = _interpTo(image, dim)
 
-    if np.shape(image_fullsize)[0] != int(fov) or np.shape(image_fullsize)[1] != int(
+    # if x and y dimensions are unequal, use zero padding
+    image_square = np.zeros((int(fov), int(fov), np.shape(image)[2])).astype("float64")
+    if np.shape(image_rescaled)[0] != int(fov) or np.shape(image_rescaled)[1] != int(
         fov
     ):
         # x or y != fov, zero fill it and make x=y
-        dim_diff_x = ((np.abs(np.shape(image_fullsize)[0] - int(fov))) / 2).astype(
+        dim_diff_x = ((np.abs(np.shape(image_rescaled)[0] - int(fov))) / 2).astype(
             "int"
         )
-        dim_diff_y = ((np.abs(np.shape(image_fullsize)[1] - int(fov))) / 2).astype(
+        dim_diff_y = ((np.abs(np.shape(image_rescaled)[1] - int(fov))) / 2).astype(
             "int"
         )
 
         dim_max_x = (int(fov) - dim_diff_x).astype("int")
         dim_max_y = (int(fov) - dim_diff_y).astype("int")
 
-        image_final[dim_diff_x:dim_max_x, dim_diff_y:dim_max_y] = image_fullsize
-        # scale
-        scaled_image = _interpTo(image_final, [128j, 128j, np.shape(image)[2] * 1j])
+        image_square[dim_diff_x:dim_max_x, dim_diff_y:dim_max_y] = image_rescaled
     else:
-        scaled_image = _interpTo(image_fullsize, [128j, 128j, np.shape(image)[2] * 1j])
+        image_square = image_rescaled
 
-    return scaled_image.astype("float64")
+    # resize image to standard 128 x 128 pixels
+    image_standard = np.zeros((128, 128, np.shape(image)[2])).astype("float64")
+    image_standard = _interpTo(
+        image_square, [128j, 128j, np.shape(image)[2] * 1j]
+    ).astype("float64")
+
+    return image_standard
 
 
 def get_biggest_island_indices(arr: np.ndarray) -> Tuple[int, int]:

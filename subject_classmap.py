@@ -127,17 +127,17 @@ class GRESubject(object):
 
         self.FOVdim = constants.FOVDIMSCALE * max(self.HFOV, self.xefov)
 
-        self.ventilation = misc.scale2match(
+        self.ventilation = misc.standardize_image_axes(
             image=self.ventilation_raw,
             pixelsize=self.ventilation_pixelsize,
             fov=self.FOVdim,
         )
-        self.ventilation_raw = misc.scale2match(
+        self.ventilation_raw = misc.standardize_image_axes(
             image=self.ventilation_raw,
             pixelsize=self.ventilation_pixelsize,
             fov=self.FOVdim,
         )
-        self.proton = misc.scale2match(
+        self.proton = misc.standardize_image_axes(
             image=self.proton_raw, pixelsize=self.proton_pixelsize, fov=self.FOVdim
         )
 
