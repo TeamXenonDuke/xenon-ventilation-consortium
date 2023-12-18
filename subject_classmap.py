@@ -318,12 +318,14 @@ class GRESubject(object):
             ind_start=ind_start,
             ind_inter=ind_inter,
         )
+        proton_reg = misc.normalize(
+            np.abs(self.proton_reg),
+            self.mask_reg,
+            method=constants.NormalizationMethods.PERCENTILE,
+        )
+        proton_reg[proton_reg > 1] = 1
         io_utils.export_montage_gray(
-            image=misc.normalize(
-                np.abs(self.proton_reg),
-                self.mask_reg,
-                method=constants.NormalizationMethods.PERCENTILE,
-            ),
+            image=proton_reg,
             path=os.path.join(
                 self.data_dir, constants.OutputPaths.PROTON_REG_MONTAGE_PNG
             ),
@@ -340,7 +342,6 @@ class GRESubject(object):
             ind_start=ind_start,
             ind_inter=ind_inter,
         )
-
         data = misc.normalize(
             self.ventilation_cor,
             method=constants.NormalizationMethods.PERCENTILE_MASKED,
