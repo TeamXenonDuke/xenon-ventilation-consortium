@@ -309,7 +309,6 @@ class GRESubject(object):
             image=misc.normalize(
                 np.abs(self.ventilation_raw),
                 self.mask_reg,
-                method=constants.NormalizationMethods.MAX,
             ),
             path=os.path.join(self.data_dir, constants.OutputPaths.VEN_COR_MONTAGE_PNG),
             ind_start=ind_start,
@@ -319,7 +318,7 @@ class GRESubject(object):
             image=misc.normalize(
                 np.abs(self.proton_reg),
                 self.mask_reg,
-                method=constants.NormalizationMethods.MAX,
+                method=constants.NormalizationMethods.PERCENTILE,
             ),
             path=os.path.join(
                 self.data_dir, constants.OutputPaths.PROTON_REG_MONTAGE_PNG

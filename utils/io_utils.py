@@ -55,6 +55,7 @@ def make_montage(image: np.ndarray, n_slices: int = 14) -> np.ndarray:
 
     Makes 2xn_slices//2 montage of the image.
     Assumes the image is of shape (x, y, z, 3).
+    If image contains <n_slices, blank slices are inserted
 
     Args:
         image (np.ndarray): image to make montage of.
@@ -77,13 +78,17 @@ def make_montage(image: np.ndarray, n_slices: int = 14) -> np.ndarray:
         row = i // n_cols
         col = i % n_cols
         # get the slice
-        slice = image[:, :, i, :]
+        if i < z:
+            slice = image[:, :, i, :]
+        else:
+            slice = np.zeros((x, y, 3))
         # add to the montage
         montage[
             row * slice_shape[0] : (row + 1) * slice_shape[0],
             col * slice_shape[1] : (col + 1) * slice_shape[1],
             :,
         ] = slice
+
     return montage
 
 
@@ -130,8 +135,7 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
     files = [
         os.path.join(path, fname)
         for fname in os.listdir(path)
-        # if not fname.startswith(".")
-        # and (fname.endswith(".dcm") or fname.endswith(".IMA"))
+        if not fname.startswith(".")
     ]
 
     assert len(files) > 0, "No dicom files found in the directory."

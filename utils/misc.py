@@ -257,14 +257,14 @@ def normalize(
     elif method == constants.NormalizationMethods.PERCENTILE:
         return image * 1.0 / np.percentile(image, percentile)
     elif method == constants.NormalizationMethods.PERCENTILE_MASKED:
-        image_thre = np.percentile(image[mask], percentile)
+        image_thre = np.percentile(image[mask > 0], percentile)
         image_n = np.divide(np.multiply(image, mask), image_thre)
         image_n[image_n > 1] = 1
         return image_n
     elif method == constants.NormalizationMethods.MEAN:
         image[np.isnan(image)] = 0
         image[np.isinf(image)] = 0
-        return image / np.mean(image[mask])
+        return image / np.mean(image[mask > 0])
     else:
         raise ValueError("Invalid normalization method")
 
