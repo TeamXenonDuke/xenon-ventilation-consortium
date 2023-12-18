@@ -130,8 +130,8 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
     files = [
         os.path.join(path, fname)
         for fname in os.listdir(path)
-        if not fname.startswith(".")
-        and (fname.endswith(".dcm") or fname.endswith(".IMA"))
+        # if not fname.startswith(".")
+        # and (fname.endswith(".dcm") or fname.endswith(".IMA"))
     ]
 
     assert len(files) > 0, "No dicom files found in the directory."
@@ -160,16 +160,26 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
 
     acquisition_date = RefDs.ContentDate
     dicom = np.zeros(ConstPixelDims)
+    slice_number = np.zeros(ConstPixelDims[2])
     fov = max(int(RefDs.Rows * pixelsize[0]), int(RefDs.Columns * pixelsize[1])) / 10
 
     for filename in files:
         # read the file
         ds = pydicom.read_file(filename)
+        # get the slice number
+        try:
+            slice_number[files.index(filename)] = int(ds.InstanceNumber)
+        except:
+            # not currently in 3D DICOMs, so set to file order for now
+            slice_number[files.index(filename)] = files.index(filename)
         # store the raw image data
         if np.std(ds.pixel_array) > 1:
             dicom[:, :, files.index(filename)] = np.transpose(ds.pixel_array, (1, 0))
+    slice_order = np.argsort(slice_number)
+    dicom_sorted = dicom[:, :, slice_order]
+
     out_dict = {
-        constants.IOFields.IMAGE: dicom.astype("float64"),
+        constants.IOFields.IMAGE: dicom_sorted.astype("float64"),
         constants.IOFields.PIXEL_SIZE: pixelsize,
         constants.IOFields.SLICE_THICKNESS: slicethickness,
         constants.IOFields.FOV: fov,
