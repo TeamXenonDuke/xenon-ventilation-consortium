@@ -532,7 +532,7 @@ def export_html_pdf_vent(
         o.write(rendered)
     # generate pdf from html
     pdf_clinical_path = os.path.join(
-        data_dir, constants.OutputPaths.REPORT_CLINICAL + subject_id + ".pdf"
+        data_dir, constants.OutputPaths.REPORT_CLINICAL + "_" + subject_id + ".pdf"
     )
     logging.info("exporting report into pdf file")
     options = constants.PDFOPTIONS.VEN_PDF_OPTIONS
@@ -540,7 +540,7 @@ def export_html_pdf_vent(
     pages = pdf2image.convert_from_path(pdf_clinical_path, 500)
     for page in pages:
         jpg_path = os.path.join(
-            data_dir, constants.OutputPaths.REPORT_CLINICAL + subject_id + ".jpg"
+            data_dir, constants.OutputPaths.REPORT_CLINICAL + "_" + subject_id + ".jpg"
         )
         page.save(jpg_path, "JPEG")
     os.remove(report_clinical)
