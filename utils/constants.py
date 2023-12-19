@@ -216,8 +216,6 @@ class PDFOPTIONS(object):
 class NormalizationMethods(object):
     """Image normalization methods."""
 
-    # VANILLA = "vanilla"
-    # PERCENTILE = "percentile"
     MAX = "max"
     PERCENTILE_MASKED = "percentile_masked"
     PERCENTILE = "percentile"
