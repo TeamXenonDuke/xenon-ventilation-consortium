@@ -292,8 +292,6 @@ def export_montage_gray(
     Args:
         image: np.ndarray 3D grayscale image
         path: str output file path
-        min: float minimum voxel value
-        max: float maximum voxel value
         ind_start: int start index
         ind_inter: int index spacing
         rotate_img (bool): rotate image by 270 deg and flip
