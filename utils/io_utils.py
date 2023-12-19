@@ -16,8 +16,6 @@ import pdf2image
 import pdfkit
 import pydicom
 import skimage
-
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import rc, xlim, ylim
 
@@ -52,45 +50,46 @@ def _adj_format2(x: float) -> str:
     return np.around(x, decimals=2).astype(str)
 
 
-def _montage(
-    image: np.ndarray, ind_start: int, ind_inter: int, n_row: int, n_col: int
-) -> np.ndarray:
-    """Stack images into an image montage.
+def make_montage(image: np.ndarray, n_slices: int = 14) -> np.ndarray:
+    """Make montage of the image.
+
+    Makes 2xn_slices//2 montage of the image.
+    Assumes the image is of shape (x, y, z, 3).
+    If image contains <n_slices, blank slices are inserted
 
     Args:
-        image (np.ndarray): 3D or 4D image volume of shape (H, W, N)
-        ind_start (int): starting index
-        ind_inter (int): index spacing
-        n_row (int): number of rows in the montage
-        n_col (int): number of columns in the montage
-
+        image (np.ndarray): image to make montage of.
+        n_slices (int, optional): number of slices to plot. Defaults to 14.
     Returns:
-        np.ndarray: _description_
+        Montaged image array.
     """
-    img_w = image.shape[0]
-    img_h = image.shape[1]
-    slices = n_row * n_col
-    ind_end = ind_start + ind_inter * slices
-    if image.ndim == 3:
-        image = np.expand_dims(image, axis=-1)
-        img_montage = np.zeros((n_row * img_h, n_col * img_w, 1))
-    elif image.ndim == 4:
-        img_montage = np.zeros((n_row * img_h, n_col * img_w, 3))
-    else:
-        raise ValueError("Invalid image dimensions. Must be either 3 or 4.")
-    image_reslice = abs(image[:, :, ind_start:ind_end:ind_inter, :])
-    slice = 0
-    for j in range(n_row):
-        for k in range(n_col):
-            if slice >= slices:
-                break
-            sliceN, sliceM = j * img_h, k * img_w
-            img_montage[
-                sliceN : sliceN + img_h, sliceM : sliceM + img_w, :
-            ] = image_reslice[:, :, slice, :]
-            slice += 1
+    # get the shape of the image
+    x, y, z, _ = image.shape
+    # get the number of rows and columns
+    n_rows = 2
+    n_cols = n_slices // n_rows
+    # get the shape of the slices
+    slice_shape = (x, y)
+    # make the montage array
+    montage = np.zeros((n_rows * slice_shape[0], n_cols * slice_shape[1], 3))
+    # iterate over the slices
+    for i in range(n_slices):
+        # get the row and column
+        row = i // n_cols
+        col = i % n_cols
+        # get the slice
+        if i < z:
+            slice = image[:, :, i, :]
+        else:
+            slice = np.zeros((x, y, 3))
+        # add to the montage
+        montage[
+            row * slice_shape[0] : (row + 1) * slice_shape[0],
+            col * slice_shape[1] : (col + 1) * slice_shape[1],
+            :,
+        ] = slice
 
-    return np.squeeze(img_montage)
+    return montage
 
 
 def _merge_rgb_and_gray(gray_slice: np.ndarray, rgb_slice: np.ndarray) -> np.ndarray:
@@ -137,7 +136,6 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
         os.path.join(path, fname)
         for fname in os.listdir(path)
         if not fname.startswith(".")
-        and (fname.endswith(".dcm") or fname.endswith(".IMA"))
     ]
 
     assert len(files) > 0, "No dicom files found in the directory."
@@ -149,30 +147,43 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
 
     if scan_type == constants.ScanType.GRE.value:
         slicethickness = RefDs.SpacingBetweenSlices
-        pixelsize = RefDs.PixelSpacing[
-            1
-        ]  # save the pixel size (#4 for vent, #2 for proton)
+        pixelsize = np.array(
+            RefDs.PixelSpacing
+        )  # save the pixel size (#4 for vent, #2 for proton)
     elif scan_type == constants.ScanType.SPIRAL.value:
         slicethickness = RefDs.SliceThickness
-        pixelsize = RefDs.PixelSpacing[
-            1
-        ]  # save the pixel size (#4 for vent, #2 for proton)
-    else:
+        pixelsize = np.array(
+            RefDs.PixelSpacing
+        )  # save the pixel size (#4 for vent, #2 for proton)
+    elif scan_type == constants.ScanType.RADIAL.value:
+        # these are not currently in the 3D DICOM headers, so set to default for now
         slicethickness = constants.DEFAULT_SLICE_THICKNESS
-        pixelsize = constants.DEFAULT_PIXEL_SIZE
+        pixelsize = np.array(
+            [constants.DEFAULT_PIXEL_SIZE, constants.DEFAULT_PIXEL_SIZE]
+        )
 
     acquisition_date = RefDs.ContentDate
-
     dicom = np.zeros(ConstPixelDims)
-    fov = (max(int(RefDs.Columns), int(RefDs.Rows)) * pixelsize) / 10
+    slice_number = np.zeros(ConstPixelDims[2])
+    fov = max(int(RefDs.Rows * pixelsize[0]), int(RefDs.Columns * pixelsize[1])) / 10
+
     for filename in files:
         # read the file
         ds = pydicom.read_file(filename)
+        # get the slice number
+        try:
+            slice_number[files.index(filename)] = int(ds.InstanceNumber)
+        except:
+            # not currently in 3D DICOMs, so set to file order for now
+            slice_number[files.index(filename)] = files.index(filename)
         # store the raw image data
         if np.std(ds.pixel_array) > 1:
             dicom[:, :, files.index(filename)] = np.transpose(ds.pixel_array, (1, 0))
+    slice_order = np.argsort(slice_number)
+    dicom_sorted = dicom[:, :, slice_order]
+
     out_dict = {
-        constants.IOFields.IMAGE: dicom.astype("float64"),
+        constants.IOFields.IMAGE: dicom_sorted.astype("float64"),
         constants.IOFields.PIXEL_SIZE: pixelsize,
         constants.IOFields.SLICE_THICKNESS: slicethickness,
         constants.IOFields.FOV: fov,
@@ -272,8 +283,6 @@ def export_3DRGB2nii(
 def export_montage_gray(
     image: np.ndarray,
     path: str,
-    min_value: float,
-    max_value: float,
     ind_start: int,
     ind_inter: int,
     rotate_img: Optional[bool] = True,
@@ -283,25 +292,29 @@ def export_montage_gray(
     Args:
         image: np.ndarray 3D grayscale image
         path: str output file path
-        min: float minimum voxel value
-        max: float maximum voxel value
         ind_start: int start index
         ind_inter: int index spacing
         rotate_img (bool): rotate image by 270 deg and flip
     """
-    n_row = constants.NUM_ROWS_GRE_MONTAGE
-    n_col = min(constants.NUM_COLS_GRE_MONTAGE, image.shape[2] // 2)
+    # divide by the maximum value
+    image = image / np.max(image)
+
     # rotate images
     if rotate_img:
         image = np.rot90(image, 3)
         image = np.flip(image, 1)
 
-    img_montage = _montage(image, ind_start, ind_inter, n_row, n_col)
+    # stack the image to make it 4D (x, y, z, 3)
+    image = np.stack((image, image, image), axis=-1)
+
+    # plot the montage
+    ind_end = ind_start + ind_inter * 14
+    img_montage = make_montage(image[:, :, ind_start:ind_end:ind_inter, :])
 
     plt.gca().set_axis_off()
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     plt.margins(0, 0)
-    plt.imshow(img_montage, cmap="gray", vmin=min_value, vmax=max_value)
+    plt.imshow(img_montage, cmap="gray")
     plt.axis("off")
     plt.savefig(path, bbox_inches="tight", pad_inches=0.0, dpi=300)
     plt.clf()
@@ -345,8 +358,6 @@ def export_montage_overlay(
     image_background[image_background > 1] = 1
     # get the image shape
     img_w, img_h, img_n = np.shape(image_bin)
-    n_row = constants.NUM_ROWS_GRE_MONTAGE
-    n_col = min(constants.NUM_COLS_GRE_MONTAGE, img_n // 2)
     n_slice = min(img_n, constants.NUM_SLICE_GRE_MONTAGE)
     ind_end = ind_start + ind_inter * slices
     # initialize 4D image
@@ -365,9 +376,8 @@ def export_montage_overlay(
     nii_filename = "ven_Sub" + subject_id + ".nii"
     nii_path = os.path.join(os.path.dirname(path), nii_filename)
     export_3DRGB2nii(image=colormap, path=nii_path, fov=fov, n_slice=n_slice)
-    colormap_mon = colormap[:, :, ind_start:ind_end:ind_inter, :]
     # make montage from the image stack
-    img_montage = _montage(colormap_mon, ind_start, ind_inter, n_row, n_col)
+    img_montage = make_montage(colormap[:, :, ind_start:ind_end:ind_inter, :])
     # plot and save the montage
     plt.figure()
     plt.gca().set_axis_off()
@@ -447,14 +457,19 @@ def export_histogram(
 
 
 def export_html_pdf_vent(
-    subject_id: str, data_dir: str, stats_dict: Dict[str, Any], scan_type: str
+    subject_id: str,
+    data_dir: str,
+    stats_dict: Dict[str, Any],
+    ref_dict: Dict[str, Any],
+    scan_type: str,
 ):
     """Render HTML and PDF file using templates and reference values.
 
     Args:
         subject_id (str): subject id name
         data_dir (str): output data directoy
-        stats_dict (Dict[str, Any]): dictionary of reference values
+        stats_dict (Dict[str, Any]): dictionary of subject stats
+        ref_dict (Dict[str, Ant]): dictionary of reference stats
         scan_type (str): scan type
     """
     wd = os.path.join(os.path.dirname(__file__), "..")
@@ -507,7 +522,7 @@ def export_html_pdf_vent(
         constants.IOFields.SCAN_TYPE: scan_type.upper(),
     }
 
-    html_dict.update(constants.REFERENCESTATS.ref_stats_ven_gre_dict)
+    html_dict.update(ref_dict)
     with open(temp_clinical, "r") as f:
         data = f.read()
         rendered = data.format(**html_dict)
@@ -515,7 +530,7 @@ def export_html_pdf_vent(
         o.write(rendered)
     # generate pdf from html
     pdf_clinical_path = os.path.join(
-        data_dir, constants.OutputPaths.REPORT_CLINICAL + subject_id + ".pdf"
+        data_dir, constants.OutputPaths.REPORT_CLINICAL + "_" + subject_id + ".pdf"
     )
     logging.info("exporting report into pdf file")
     options = constants.PDFOPTIONS.VEN_PDF_OPTIONS
@@ -523,7 +538,7 @@ def export_html_pdf_vent(
     pages = pdf2image.convert_from_path(pdf_clinical_path, 500)
     for page in pages:
         jpg_path = os.path.join(
-            data_dir, constants.OutputPaths.REPORT_CLINICAL + subject_id + ".jpg"
+            data_dir, constants.OutputPaths.REPORT_CLINICAL + "_" + subject_id + ".jpg"
         )
         page.save(jpg_path, "JPEG")
     os.remove(report_clinical)

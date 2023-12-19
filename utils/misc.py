@@ -3,6 +3,8 @@
 import pdb
 import sys
 
+import cv2
+
 sys.path.append("..")
 from typing import Any, List, Tuple
 
@@ -80,63 +82,71 @@ def _interpTo(image: np.ndarray, dim: List[Any]):
     return interpolated
 
 
-def scale2match(image: np.ndarray, pixelsize: float, fov: float) -> np.ndarray:
-    """Scale and resize ventilation image to numpy array.
-    TODO: Rename this function properly.
+def standardize_image_axes(
+    image: np.ndarray, pixelsize: np.ndarray, fov: float
+) -> np.ndarray:
+    """Resize image such that x and y dimensions are of the same scale and length.
 
     Args:
-        image: np.ndarray image to be scaled and resized
-        pixelsize: float size of pixel
-        fov: float field of view size
+        image (np.array): np.ndarray image to be scaled and resized
+        pixelsize (np.array): array denoting row and column spacing of pixels in mm
+        fov (float): float field of view size
     Returns:
         np.ndarray of the scaled and resized image
     """
-    ## crop the ventilation image to x=y and scale to 128x128
-    scaled_image = np.zeros((128, 128, np.shape(image)[2])).astype("float64")
-    image_fullsize = np.zeros(
+    # resize image so that x and y array elements are spaced by 1 mm
+    image_rescaled = np.zeros(
         (
-            round(np.shape(image)[0] * pixelsize),
-            round(np.shape(image)[1] * pixelsize),
+            int(np.shape(image)[0] * pixelsize[1]),
+            int(np.shape(image)[1] * pixelsize[0]),
             np.shape(image)[2],
         )
     ).astype("float64")
-    image_final = np.zeros((int(fov), int(fov), np.shape(image)[2])).astype("float64")
     dim = [
-        round(np.shape(image)[0] * pixelsize) * 1j,
-        round(np.shape(image)[1] * pixelsize) * 1j,
+        int(np.shape(image)[0] * pixelsize[1]) * 1j,
+        int(np.shape(image)[1] * pixelsize[0]) * 1j,
         np.shape(image)[2] * 1j,
     ]
-    image_fullsize = _interpTo(image, dim)
+    image_rescaled = _interpTo(image, dim)
 
-    if np.shape(image_fullsize)[0] != int(fov) or np.shape(image_fullsize)[1] != int(
+    # if x and y dimensions are unequal, use zero padding
+    image_square = np.zeros((int(fov), int(fov), np.shape(image)[2])).astype("float64")
+    if np.shape(image_rescaled)[0] != int(fov) or np.shape(image_rescaled)[1] != int(
         fov
     ):
         # x or y != fov, zero fill it and make x=y
-        dim_diff_x = ((np.abs(np.shape(image_fullsize)[0] - int(fov))) / 2).astype(
+        dim_diff_x = ((np.abs(np.shape(image_rescaled)[0] - int(fov))) / 2).astype(
             "int"
         )
-        dim_diff_y = ((np.abs(np.shape(image_fullsize)[1] - int(fov))) / 2).astype(
+        dim_diff_y = ((np.abs(np.shape(image_rescaled)[1] - int(fov))) / 2).astype(
             "int"
         )
 
         dim_max_x = (int(fov) - dim_diff_x).astype("int")
         dim_max_y = (int(fov) - dim_diff_y).astype("int")
 
-        image_final[dim_diff_x:dim_max_x, dim_diff_y:dim_max_y] = image_fullsize
-        # scale
-        scaled_image = _interpTo(image_final, [128j, 128j, np.shape(image)[2] * 1j])
+        image_square[dim_diff_x:dim_max_x, dim_diff_y:dim_max_y] = image_rescaled
     else:
-        scaled_image = _interpTo(image_fullsize, [128j, 128j, np.shape(image)[2] * 1j])
+        image_square = image_rescaled
 
-    return scaled_image.astype("float64")
+    # resize image to standard 128 x 128 pixels
+    image_standard = np.zeros((128, 128, np.shape(image)[2])).astype("float64")
+    image_standard = _interpTo(
+        image_square, [128j, 128j, np.shape(image)[2] * 1j]
+    ).astype("float64")
+
+    return image_standard
 
 
-def _get_index_max_ones(arr: np.ndarray) -> Tuple[int, int]:
-    """Calculate starting index and ending index of the max consecutive ones.
+def get_biggest_island_indices(arr: np.ndarray) -> Tuple[int, int]:
+    """Get the start and stop indices of the biggest island in the array.
 
     Args:
-        arr: 1D array
+        arr (np.ndarray): binary array of 0s and 1s.
+    Returns:
+        Tuple of start and stop indices of the biggest island.
     """
+    # intitialize count
     cur_count = 0
     cur_start = 0
 
@@ -145,11 +155,10 @@ def _get_index_max_ones(arr: np.ndarray) -> Tuple[int, int]:
 
     index_start = 0
     index_end = 0
-
     for i in range(0, np.size(arr)):
         if arr[i] == 0:
             cur_count = 0
-            if (pre_state == 1) and (cur_start == index_start):
+            if (pre_state == 1) & (cur_start == index_start):
                 index_end = i - 1
             pre_state = 0
 
@@ -165,6 +174,38 @@ def _get_index_max_ones(arr: np.ndarray) -> Tuple[int, int]:
     return index_start, index_end
 
 
+def get_plot_indices(image: np.ndarray, scan_type: str) -> Tuple[int, int]:
+    """Get the indices to plot the image.
+
+    Args:
+        image (np.ndarray): binary image.
+        scan_type (str): scan_type
+    Returns:
+        Tuple of start and interval indices.
+    """
+    sum_line = np.sum(np.sum(image, axis=0), axis=0)
+    if (
+        scan_type == constants.ScanType.GRE.value
+        or scan_type == constants.ScanType.SPIRAL.value
+    ):
+        index_start, index_end = get_biggest_island_indices(sum_line >= 0)
+        flt_inter = (index_end - index_start) // constants.NUM_SLICE_GRE_MONTAGE
+    elif scan_type == constants.ScanType.RADIAL.value:
+        index_start, index_end = get_biggest_island_indices(sum_line > 0)
+        flt_inter = (index_end - index_start) // constants.NUM_SLICE_GRE_MONTAGE
+
+    # threshold to decide interval number
+    if np.modf(flt_inter)[0] > 0.4:
+        index_skip = np.ceil(flt_inter).astype(int)
+    else:
+        index_skip = np.floor(flt_inter).astype(int)
+
+    # insure that index_skip is at least 1
+    index_skip = max(1, index_skip)
+
+    return index_start, index_skip
+
+
 def get_start_interval(mask: np.ndarray, scan_type: str) -> Tuple[int, int]:
     """Determine the starting slice index and the interval to display the montage.
 
@@ -177,28 +218,26 @@ def get_start_interval(mask: np.ndarray, scan_type: str) -> Tuple[int, int]:
         scan_type == constants.ScanType.GRE.value
         or scan_type == constants.ScanType.SPIRAL.value
     ):
-        num_slice = constants.NUM_SLICE_GRE_MONTAGE
         binary_arr = sum_line > -1
+        ind_start, ind_end = get_biggest_island_indices(binary_arr)
+        flt_inter = (ind_end - ind_start) / constants.NUM_SLICE_GRE_MONTAGE
+
+        # use 0.4 as a threshold to decide interval number
+        if np.modf(flt_inter)[0] > 0.4:
+            ind_inter = np.ceil(flt_inter).astype(int)
+        else:
+            ind_inter = np.floor(flt_inter).astype(int)
+        # insure that ind_inter is at least 1
+        ind_inter = max(1, ind_inter)
     else:
         raise ValueError("Invalid scan type.")
-    ind_start, ind_end = _get_index_max_ones(binary_arr)
-
-    flt_inter = (ind_end - ind_start) / num_slice
-
-    # use 0.4 as a threshold to decide interval number
-    if np.modf(flt_inter)[0] > 0.4:
-        ind_inter = np.ceil(flt_inter).astype(int)
-    else:
-        ind_inter = np.floor(flt_inter).astype(int)
-    # insure that ind_inter is at least 1
-    ind_inter = max(1, ind_inter)
     return ind_start, ind_inter
 
 
 def normalize(
     image: np.ndarray,
-    method: str,
     mask: np.ndarray = np.array([0.0]),
+    method: str = constants.NormalizationMethods.PERCENTILE_MASKED,
     percentile: float = 99.0,
 ) -> np.ndarray:
     """Normalize the image to be between [0, 1.0].
@@ -213,13 +252,19 @@ def normalize(
     Returns:
         np.ndarray: normalized image
     """
-    if method == constants.NormalizationMethods.VANILLA:
+    if method == constants.NormalizationMethods.MAX:
         return image * 1.0 / np.max(image)
     elif method == constants.NormalizationMethods.PERCENTILE:
-        image_thre = np.percentile(image[mask], percentile)
+        return image * 1.0 / np.percentile(image, percentile)
+    elif method == constants.NormalizationMethods.PERCENTILE_MASKED:
+        image_thre = np.percentile(image[mask > 0], percentile)
         image_n = np.divide(np.multiply(image, mask), image_thre)
         image_n[image_n > 1] = 1
         return image_n
+    elif method == constants.NormalizationMethods.MEAN:
+        image[np.isnan(image)] = 0
+        image[np.isinf(image)] = 0
+        return image / np.mean(image[mask > 0])
     else:
         raise ValueError("Invalid normalization method")
 
@@ -239,3 +284,34 @@ def remove_small_objects(mask: np.ndarray, scale: float = 0.1):
     return skimage.morphology.remove_small_objects(
         ar=mask, min_size=min_size, connectivity=1
     ).astype("bool")
+
+
+def erode_image(image: np.ndarray, erosion: int) -> np.ndarray:
+    """Erode image.
+
+    Erodes image slice by slice.
+
+    Args:
+        image (np.ndarray): 3-D image to erode.
+        erosion (int): size of erosion kernel.
+    Returns:
+        Eroded image.
+    """
+    kernel = np.ones((erosion, erosion), np.uint8)
+    for i in range(image.shape[2]):
+        image[:, :, i] = cv2.erode(image[:, :, i], kernel, iterations=1)
+    return image
+
+
+def standardize_image(image: np.ndarray) -> np.ndarray:
+    """Standardize image.
+
+    Args:
+        image (np.ndarray): image to standardize.
+    Returns:
+        Standardized image.
+    """
+    image = np.abs(image)
+    image = 255 * (image - np.min(image)) / (np.max(image) - np.min(image))
+    image = (image - np.mean(image)) / np.std(image)
+    return image

@@ -7,11 +7,14 @@ import nibabel as nib
 import numpy as np
 import tensorflow as tf
 from absl import app, flags
+from scipy.ndimage import zoom
 
-from utils import constants, io_utils
+from models.model_vnet import vnet
+from utils import constants, io_utils, misc
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("image_type", "vent", "either ute or vent for segmentation")
+flags.DEFINE_string("scan_type", "gre", "ether gre, spiral, or radial")
 flags.DEFINE_string("nii_filename", "", "nii image file path")
 
 
@@ -58,18 +61,19 @@ def hist_transform(img: np.ndarray) -> np.ndarray:
     return transformed_data.astype("float64")
 
 
-def evaluate(image: np.ndarray) -> np.ndarray:
-    """Predict mask using segmentation model.
+def predict_2d(image: np.ndarray, erosion: int = 0) -> np.ndarray:
+    """Predict mask using segmentation model for 2D images.
 
     Args:
         image (np.ndarray): image array.
+        erosion (int): kernel size for eroding mask boundary
 
     Returns:
         np.ndarray: predicted mask.
     """
     current_path = os.path.dirname(__file__)
     mymodel = os.path.join(
-        current_path, "models", "weights", constants.CNNPaths.DEFAULT
+        current_path, "models", "weights", constants.CNNPaths.PROTON_2D
     )
     image = np.rot90(image)
     ute_trans = hist_transform(image)
@@ -99,14 +103,83 @@ def evaluate(image: np.ndarray) -> np.ndarray:
         mask[:, :, i] = mask_slice
     mask = mask.astype("float64")
 
+    # erode mask
+    if erosion > 0:
+        mask = misc.erode_image(mask, erosion)
+
     return mask
+
+
+def predict_3d(
+    image: np.ndarray,
+    image_type: str = constants.ImageType.VENT.value,
+    erosion: int = 0,
+) -> np.ndarray:
+    """Generate a segmentation mask from a 3D proton or ventilation image.
+
+    Args:
+        image: np.nd array of the input image to be segmented.
+        image_type: str of the image type ute or vent.
+    Returns:
+        mask: np.ndarray of type bool of the output mask.
+    """
+    # get shape of the image
+    img_h, img_w, _ = np.shape(image)
+    # reshaping image for segmentation
+    if img_h == 64 and img_w == 64:
+        print("Reshaping image for segmentation")
+        image = zoom(abs(image), [2, 2, 2])
+    elif img_h == 128 and img_w == 128:
+        pass
+    else:
+        raise ValueError("Segmentation Image size should be 128 x 128 x n")
+
+    if image_type == constants.ImageType.VENT.value:
+        model = vnet(input_size=(128, 128, 128, 1))
+        weights_dir_current = os.path.join(
+            "models", "weights", constants.CNNPaths.VENT_3D
+        )
+    elif image_type == constants.ImageType.UTE.value:
+        model = vnet(input_size=(128, 128, 128, 1))
+        weights_dir_current = os.path.join(
+            "models", "weights", constants.CNNPaths.PROTON_3D
+        )
+    else:
+        raise ValueError("image_type must be ute or vent")
+
+    # Load model weights
+    model.load_weights(weights_dir_current)
+
+    if image_type == constants.ImageType.VENT.value:
+        image = misc.standardize_image(image)
+    else:
+        raise ValueError("Image type must be ute or vent")
+    # Model Prediction
+    image = image[None, ...]
+    image = image[..., None]
+    mask = model.predict(image)
+    # Making mask binary
+    mask = mask[0, :, :, :, 0]
+    mask[mask > 0.5] = 1
+    mask[mask < 1] = 0
+    # erode mask
+    if erosion > 0:
+        mask = misc.erode_image(mask, erosion)
+    return mask.astype("float64")
 
 
 def main(argv):
     """Run CNN model inference on ute or vent image."""
     image = nib.load(FLAGS.nii_filename).get_fdata()
     image_type = FLAGS.image_type
-    mask = evaluate(image)
+    scan_type = FLAGS.scan_type
+    if (
+        scan_type == constants.ScanType.GRE.value
+        or scan_type == constants.ScanType.SPIRAL.value
+    ):
+        mask = predict_2d(image)
+    elif scan_type == constants.ScanType.RADIAL.value:
+        mask = predict_3d(image, image_type)
     export_path = os.path.dirname(FLAGS.nii_filename) + "/mask.nii"
     io_utils.export_nii(image=mask.astype("float64"), path=export_path)
 

@@ -127,17 +127,17 @@ class GRESubject(object):
 
         self.FOVdim = constants.FOVDIMSCALE * max(self.HFOV, self.xefov)
 
-        self.ventilation = misc.scale2match(
+        self.ventilation = misc.standardize_image_axes(
             image=self.ventilation_raw,
             pixelsize=self.ventilation_pixelsize,
             fov=self.FOVdim,
         )
-        self.ventilation_raw = misc.scale2match(
+        self.ventilation_raw = misc.standardize_image_axes(
             image=self.ventilation_raw,
             pixelsize=self.ventilation_pixelsize,
             fov=self.FOVdim,
         )
-        self.proton = misc.scale2match(
+        self.proton = misc.standardize_image_axes(
             image=self.proton_raw, pixelsize=self.proton_pixelsize, fov=self.FOVdim
         )
 
@@ -181,9 +181,26 @@ class GRESubject(object):
         """Segment the thoracic cavity."""
         if self.segmentation_key == constants.SegmentationKey.CNN_PROTON.value:
             logging.info("Performing neural network segmenation.")
-            self.mask_reg = segmentation.evaluate(self.proton)
+            if (
+                self.scan_type == constants.ScanType.GRE.value
+                or self.scan_type == constants.ScanType.SPIRAL.value
+            ):
+                self.mask_reg = segmentation.predict_2d(self.proton)
+            elif self.scan_type == constants.ScanType.RADIAL.value:
+                raise NotImplementedError(
+                    "Neural network segmentation on Radial proton image not implemented."
+                )
         elif self.segmentation_key == constants.SegmentationKey.CNN_VENT.value:
-            pass
+            logging.info("Performing neural network segmenation.")
+            if (
+                self.scan_type == constants.ScanType.GRE.value
+                or self.scan_type == constants.ScanType.SPIRAL.value
+            ):
+                raise NotImplementedError(
+                    "Neural network segmentation on 2D vent image not implemented."
+                )
+            elif self.scan_type == constants.ScanType.RADIAL.value:
+                self.mask_reg = segmentation.predict_3d(self.ventilation)
         elif (
             self.segmentation_key == constants.SegmentationKey.MANUAL_VENT.value
             or self.segmentation_key == constants.SegmentationKey.MANUAL_PROTON.value
@@ -216,7 +233,7 @@ class GRESubject(object):
             (
                 self.ventilation_cor,
                 self.ventilation_biasfield,
-            ) = biasfield.biasFieldCor(
+            ) = biasfield.correct_biasfield_n4itk(
                 image=abs(self.ventilation),
                 mask=self.mask_reg.astype(bool),
             )
@@ -225,7 +242,7 @@ class GRESubject(object):
 
     def gas_binning(self):
         """Bin ventilation image to colormap bins."""
-        bin_threshold = constants.REFERENCESTATS.REF_BINS_VEN_GRE
+        bin_threshold = self.config.reference_data.ref_bins_ven
         (
             self.ventilation,
             self.ventilation_binning,
@@ -251,6 +268,7 @@ class GRESubject(object):
         if (
             self.scan_type == constants.ScanType.GRE.value
             or self.scan_type == constants.ScanType.SPIRAL.value
+            or self.scan_type == constants.ScanType.RADIAL.value
         ):
             inflation_volume = metrics.inflation_volume_2D(
                 self.mask_reg, self.xefov, self.xenonslicethickness
@@ -276,8 +294,8 @@ class GRESubject(object):
         ## make montage, plot histogram, and generate report
         index2color = constants.BIN2COLORMAP.VENT_BIN2COLOR_MAP
         # Get start/stop intervals
-        ind_start, ind_inter = misc.get_start_interval(
-            mask=self.mask_reg, scan_type=self.scan_type
+        ind_start, ind_inter = misc.get_plot_indices(
+            image=self.mask_reg, scan_type=self.config.scan_type
         )
         # export montages
         io_utils.export_montage_overlay(
@@ -292,41 +310,41 @@ class GRESubject(object):
             ind_inter=ind_inter,
         )
         io_utils.export_montage_gray(
-            image=self.ventilation_raw,
+            image=misc.normalize(
+                np.abs(self.ventilation_raw),
+                self.mask_reg,
+            ),
             path=os.path.join(self.data_dir, constants.OutputPaths.VEN_COR_MONTAGE_PNG),
             ind_start=ind_start,
             ind_inter=ind_inter,
-            min_value=np.percentile(np.abs(self.ventilation_raw), 0).astype(float),
-            max_value=np.percentile(
-                np.abs(self.ventilation_raw), constants.VEN_PERCENTILE_RESCALE
-            ).astype(float),
         )
+        proton_reg = misc.normalize(
+            np.abs(self.proton_reg),
+            self.mask_reg,
+            method=constants.NormalizationMethods.PERCENTILE,
+        )
+        proton_reg[proton_reg > 1] = 1
         io_utils.export_montage_gray(
-            image=self.proton_reg,
+            image=proton_reg,
             path=os.path.join(
                 self.data_dir, constants.OutputPaths.PROTON_REG_MONTAGE_PNG
             ),
             ind_start=ind_start,
             ind_inter=ind_inter,
-            min_value=np.percentile(abs(self.proton_reg), 0).astype(float),
-            max_value=np.percentile(
-                abs(self.proton_reg), constants.PROTON_PERCENTILE_RESCALE
-            ).astype(float),
         )
         io_utils.export_montage_gray(
-            image=self.ventilation_cor,
+            image=misc.normalize(
+                np.abs(self.ventilation_cor),
+                self.mask_reg,
+                method=constants.NormalizationMethods.MAX,
+            ),
             path=os.path.join(self.data_dir, constants.OutputPaths.VEN_COR_MONTAGE_PNG),
             ind_start=ind_start,
             ind_inter=ind_inter,
-            min_value=np.percentile(abs(self.ventilation_cor), 0).astype(float),
-            max_value=np.percentile(
-                abs(self.ventilation_cor), constants.VEN_PERCENTILE_RESCALE
-            ).astype(float),
         )
-
         data = misc.normalize(
             self.ventilation_cor,
-            method=constants.NormalizationMethods.PERCENTILE,
+            method=constants.NormalizationMethods.PERCENTILE_MASKED,
             mask=self.mask_reg.astype(bool),
             percentile=constants.VEN_PERCENTILE_RESCALE,
         )[self.mask_reg.astype(bool)]
@@ -346,6 +364,7 @@ class GRESubject(object):
             subject_id=self.subject_id,
             data_dir=self.data_dir,
             stats_dict=self.stats_dict,
+            ref_dict=self.config.reference_data.ref_stats_ven_dict,
             scan_type=self.scan_type,
         )
 
