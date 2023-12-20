@@ -1,4 +1,4 @@
-"""Module for 2D ventilation subject."""
+"""Module for ventilation subject."""
 import datetime
 import glob
 import logging
@@ -17,7 +17,7 @@ from config import base_config
 from utils import binning, constants, io_utils, metrics, misc
 
 
-class GRESubject(object):
+class Subject(object):
     """Module to for processing 2D ventilation.
 
     Attributes:
@@ -62,7 +62,7 @@ class GRESubject(object):
 
     def __init__(self, config: base_config.Config):
         """Init object."""
-        logging.info("Initializing 2D ventilation subject.")
+        logging.info("Initializing ventilation subject.")
         self.acquisition_time_H = ""
         self.acquisition_time_Xe = ""
         self.bias_key = str(config.bias_key)
