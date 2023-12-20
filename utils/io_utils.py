@@ -150,19 +150,16 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
         pixelsize = np.array(
             RefDs.PixelSpacing
         )  # save the pixel size (#4 for vent, #2 for proton)
-    elif scan_type == constants.ScanType.SPIRAL.value:
+    elif (
+        scan_type == constants.ScanType.SPIRAL.value
+        or scan_type == constants.ScanType.RADIAL.value
+    ):
         slicethickness = RefDs.SliceThickness
         pixelsize = np.array(
             RefDs.PixelSpacing
         )  # save the pixel size (#4 for vent, #2 for proton)
-    elif scan_type == constants.ScanType.RADIAL.value:
-        # these are not currently in the 3D DICOM headers, so set to default for now
-        slicethickness = constants.DEFAULT_SLICE_THICKNESS
-        pixelsize = np.array(
-            [constants.DEFAULT_PIXEL_SIZE, constants.DEFAULT_PIXEL_SIZE]
-        )
 
-    acquisition_date = RefDs.ContentDate
+    acquisition_date = RefDs.StudyDate
     dicom = np.zeros(ConstPixelDims)
     slice_number = np.zeros(ConstPixelDims[2])
     fov = max(int(RefDs.Rows * pixelsize[0]), int(RefDs.Columns * pixelsize[1])) / 10
@@ -171,11 +168,7 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
         # read the file
         ds = pydicom.read_file(filename)
         # get the slice number
-        try:
-            slice_number[files.index(filename)] = int(ds.InstanceNumber)
-        except:
-            # not currently in 3D DICOMs, so set to file order for now
-            slice_number[files.index(filename)] = files.index(filename)
+        slice_number[files.index(filename)] = int(ds.InstanceNumber)
         # store the raw image data
         if np.std(ds.pixel_array) > 1:
             dicom[:, :, files.index(filename)] = np.transpose(ds.pixel_array, (1, 0))
