@@ -5,7 +5,7 @@ import pdb
 from absl import app, flags
 from ml_collections import config_dict, config_flags
 
-from subject_classmap import GRESubject
+from subject_classmap import Subject
 
 FLAGS = flags.FLAGS
 
@@ -18,7 +18,7 @@ def ventilation_mapping_gre(config: config_dict.ConfigDict):
     Args:
         config (config_dict.ConfigDict): config dict
     """
-    subject = GRESubject(config=config)
+    subject = Subject(config=config)
     # read in dicom files
     logging.info("1. reading in files")
     subject.readinfiles()
