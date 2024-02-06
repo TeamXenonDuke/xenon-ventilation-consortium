@@ -106,7 +106,7 @@ class GUI(tk.Tk):
         ttk.OptionMenu(
             self,
             self.var_segmentation_flag,
-            constants.SegmentationKey.CNN_PROTON.value,
+            constants.SegmentationKey.CNN_VENT.value,
             *[_.value for _ in constants.SegmentationKey]
         ).grid(row=3, column=1, **padding)
 
