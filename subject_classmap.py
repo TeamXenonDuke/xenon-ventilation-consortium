@@ -196,9 +196,10 @@ class Subject(object):
                 self.scan_type == constants.ScanType.GRE.value
                 or self.scan_type == constants.ScanType.SPIRAL.value
             ):
-                raise NotImplementedError(
-                    "Neural network segmentation on 2D vent image not implemented."
-                )
+                #raise NotImplementedError(
+                #    "Neural network segmentation on 2D vent image not implemented."
+                #)
+                self.mask_reg = segmentation.predict_2dXe(self.ventilation)
             elif self.scan_type == constants.ScanType.RADIAL.value:
                 self.mask_reg = segmentation.predict_3d(self.ventilation)
         elif (
