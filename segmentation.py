@@ -8,12 +8,12 @@ import numpy as np
 import tensorflow as tf
 from absl import app, flags
 from scipy.ndimage import zoom
-from models.serialized_batch_vnet_Relu_batch_2DGRE import vnet as vnet25D
-from models.model_vnet import vnet
+from models.model_vnet import vnet, vnet_2DGRE
 from utils import constants, io_utils, misc
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("image_type", "vent", "either ute or vent for segmentation")
+flags.DEFINE_string("image_type", "vent",
+                    "either ute or vent for segmentation")
 flags.DEFINE_string("scan_type", "gre", "ether gre, spiral, or radial")
 flags.DEFINE_string("nii_filename", "", "nii image file path")
 
@@ -61,11 +61,11 @@ def hist_transform(img: np.ndarray) -> np.ndarray:
     return transformed_data.astype("float64")
 
 
-def predict_2d(image: np.ndarray, erosion: int = 0) -> np.ndarray:
-    """Predict mask using segmentation model for 2D images.
+def predict_2d_proton(image: np.ndarray, erosion: int = 0) -> np.ndarray:
+    """Predict mask using segmentation model for 2D proton images.
 
     Args:
-        image (np.ndarray): image array.
+        image (np.ndarray): proton image array.
         erosion (int): kernel size for eroding mask boundary
 
     Returns:
@@ -97,7 +97,8 @@ def predict_2d(image: np.ndarray, erosion: int = 0) -> np.ndarray:
         ute_slice = np.divide(ute_slice, ute_thre)
         ute_slice[ute_slice > 1] = 1
         ute_slice = np.multiply(ute_slice, 255)
-        mask_slice = autoencoder.predict(np.reshape(ute_slice, (1, img_w, img_h, 1)))  # type: ignore
+        mask_slice = autoencoder.predict(np.reshape(
+            ute_slice, (1, img_w, img_h, 1)))  # type: ignore
         mask_slice = de_label_map(mask_slice)
         mask_slice = np.rot90(np.flipud(mask_slice), 3)
         mask[:, :, i] = mask_slice
@@ -109,89 +110,70 @@ def predict_2d(image: np.ndarray, erosion: int = 0) -> np.ndarray:
 
     return mask
 
-def predict_2dXe(ven, erosion: int = 3):
-    # use SegNet model to make segmentation
-    # mymodel = 'myModel_utegrow_128201.h5'
+
+def predict_2d_xe(ven, erosion: int = 3):
+    """Predict mask using segmentation model for 2D Xe images.
+
+    Args:
+        image (np.ndarray): Xe image array.
+        erosion (int): kernel size for eroding mask boundary
+
+    Returns:
+        np.ndarray: predicted mask.
+    """
     current_path = os.path.dirname(__file__)
     mymodel = os.path.join(
-        current_path, "models", "weights", constants.CNNPaths.XE_2halfD
+        current_path, "models", "weights", constants.CNNPaths.XE_2_5_D
     )
 
-    model=vnet25D(input_size=(128,128,14,1))
-    model.load_weights(mymodel);
+    model = vnet_2DGRE()
+    model.load_weights(mymodel)
 
-
-    ven =np.abs(ven)
+    ven = np.abs(ven)
     ven = 255*(ven-np.min(ven))/(np.max(ven)-np.min(ven))
-    
 
-    ven = np.rot90(ven,k=-1)
-    print("##################")
-    print(ven.shape)
+    ven = np.rot90(ven, k=-1)
+
     save_real_slice = (ven.shape)[2]
-    if(save_real_slice>14):
-        diff_from_14 = save_real_slice-14;
-        cut_at_the_end = diff_from_14//2;
-        cut_at_the_start = diff_from_14-cut_at_the_end ;
-        ven = ven[:,:,cut_at_the_start:save_real_slice-cut_at_the_end]
-       
-        
-    ven_mean = np.mean(ven);
-    ven_std = np.std(ven);
-    print("##################")
-    print("mean "+str(ven_mean)+"std "+ str(ven_std))
-    print("using train mean std")
-    print("##################")
+    if (save_real_slice > 14):
+        diff_from_14 = save_real_slice-14
+        cut_at_the_end = diff_from_14//2
+        cut_at_the_start = diff_from_14-cut_at_the_end
+        ven = ven[:, :, cut_at_the_start:save_real_slice-cut_at_the_end]
+
+    ven_mean = np.mean(ven)
+    ven_std = np.std(ven)
+
     ven = (ven - ven_mean)/(ven_std)
-    #ven = (ven - 8.845115957031128)/(14.890703147049313)
     ven = ven[None, ...]
     ven = ven[..., None]
 
     # Model Prediction
     pred_mask = model.predict(ven)
-    pred_mask = pred_mask[0,...,0]
+    pred_mask = pred_mask[0, ..., 0]
 
-
-    pred_mask[pred_mask>0.5]=1;
-    pred_mask[pred_mask<=0.5]=0;
+    pred_mask[pred_mask > 0.5] = 1
+    pred_mask[pred_mask <= 0.5] = 0
 
     pred_mask = pred_mask.astype('float64')
-    pred_mask = np.rot90(pred_mask,k=1)
+    pred_mask = np.rot90(pred_mask, k=1)
 
-
-
-    # Comment out Erosion
-    #kernel = create_kernel();
-
-
-    #mask_new = np.zeros([128,128,14]);
-
-
-    #for ii in range(14):
-    #    mask_temp = pred_mask [:,:,ii].copy();
-    #    mask_temp = ndimage.binary_erosion(mask_temp, structure=kernel).astype(np.float32)
-    #    mask_new[:,:,ii] = mask_temp
-    #pred_mask = mask_new
-
-    pred_mask[pred_mask>0.5]=1;
-    pred_mask[pred_mask<=0.5]=0;
+    pred_mask[pred_mask > 0.5] = 1
+    pred_mask[pred_mask <= 0.5] = 0
     ven = np.squeeze(ven)
 
+    if (save_real_slice > 14):
+        mask_new = np.zeros([128, 128, save_real_slice])
 
-    if(save_real_slice>14):
-        mask_new = np.zeros([128,128,save_real_slice]);
-        
         for ii in range(14):
-            mask_new[:,:,cut_at_the_start+ii] = pred_mask [:,:,ii].copy();
+            mask_new[:, :, cut_at_the_start+ii] = pred_mask[:, :, ii].copy()
 
         pred_mask = mask_new
-
 
     # erode mask
     if erosion > 0:
         pred_mask = misc.erode_image(pred_mask, erosion)
 
-    
     return pred_mask
 
 
