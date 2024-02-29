@@ -81,7 +81,7 @@ class CNNPaths(object):
     PROTON_2D = "GREModel_20190323.h5"
     PROTON_3D = "model_ANATOMY_UTE.h5"
     VENT_3D = "model_ANATOMY_VEN.h5"
-    XE_2_5_D = "model_ANATOMY_VEN_2DGRE.h5"
+    VENT_2_5_D = "model_ANATOMY_VEN_2DGRE.h5"
 
 class ImageType(enum.Enum):
     """Segmentation flags."""
