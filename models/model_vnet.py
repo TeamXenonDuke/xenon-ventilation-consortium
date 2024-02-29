@@ -6,6 +6,7 @@ https://arxiv.org/pdf/1606.04797.pdf
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 import tensorflow as tf
+from typing import Tuple, List
 
 tf.compat.v1.disable_v2_behavior()
 
@@ -23,7 +24,13 @@ def BatchNormalization(name: str) -> tf.keras.layers.Layer:
     return tf.keras.layers.BatchNormalization(name=name, fused=False)
 
 
-def Deconvolution3D(inputs, filters, kernel_size, subsample, name):
+def Deconvolution3D(
+    inputs: tf.Tensor,
+    filters: int,
+    kernel_size: Tuple[int],
+    subsample: Tuple[int],
+    name: str,
+) -> tf.Tensor:
     """Constructs a 3D Deconvolution layer.
 
     Args:
@@ -57,12 +64,12 @@ def Deconvolution3D(inputs, filters, kernel_size, subsample, name):
 
 
 def downward_layer(
-    input_layer,
-    n_convolutions,
-    n_output_channels,
-    number,
-    strides=(2, 2, 2),
-):
+    input_layer: tf.Tensor,
+    n_convolutions: int,
+    n_output_channels: int,
+    number: int,
+    strides: Tuple[int, int, int] = (2, 2, 2),
+) -> Tuple[tf.Tensor, tf.Tensor]:
     """Constructs a downward layer for a 3D convolutional network.
 
     Args:
@@ -86,12 +93,8 @@ def downward_layer(
             kernel_initializer="he_normal",
             name="conv_" + str(number) + "_" + str(nnn),
         )(inl)
-        inl = BatchNormalization(
-            name="batch_" + str(number) + "_" + str(nnn)
-        )(inl)
-        inl = tf.keras.layers.ReLU(
-            name="relu_" + str(number) + "_" + str(nnn)
-        )(inl)
+        inl = BatchNormalization(name="batch_" + str(number) + "_" + str(nnn))(inl)
+        inl = tf.keras.layers.ReLU(name="relu_" + str(number) + "_" + str(nnn))(inl)
 
     add_l = tf.math.add(inl, input_layer)
     downsample = tf.keras.layers.Conv3D(
@@ -102,23 +105,23 @@ def downward_layer(
         kernel_initializer="he_normal",
         name="conv_" + str(number) + "_" + str(nnn + 1),
     )(add_l)
-    downsample = BatchNormalization(
-        name="batch_" + str(number) + "_" + str(nnn + 1)
-    )(downsample)
-    downsample = tf.keras.layers.ReLU(
-        name="relu_" + str(number) + "_" + str(nnn + 1)
-    )(downsample)
+    downsample = BatchNormalization(name="batch_" + str(number) + "_" + str(nnn + 1))(
+        downsample
+    )
+    downsample = tf.keras.layers.ReLU(name="relu_" + str(number) + "_" + str(nnn + 1))(
+        downsample
+    )
     return downsample, add_l
 
 
 def upward_layer(
-    input0,
-    input1,
-    n_convolutions,
-    n_output_channels,
-    number,
-    strides=(2, 2, 2),
-):
+    input0: tf.Tensor,
+    input1: tf.Tensor,
+    n_convolutions: int,
+    n_output_channels: int,
+    number: int,
+    strides: Tuple[int, int, int] = (2, 2, 2),
+) -> tf.Tensor:
     """Constructs an upward layer for a 3D convolutional network.
 
     Args:
@@ -143,12 +146,8 @@ def upward_layer(
             kernel_initializer="he_normal",
             name="conv_" + str(number) + "_" + str(nnn),
         )(inl)
-        inl = BatchNormalization(
-            name="batch_" + str(number) + "_" + str(nnn)
-        )(inl)
-        inl = tf.keras.layers.ReLU(
-            name="relu_" + str(number) + "_" + str(nnn)
-        )(inl)
+        inl = BatchNormalization(name="batch_" + str(number) + "_" + str(nnn))(inl)
+        inl = tf.keras.layers.ReLU(name="relu_" + str(number) + "_" + str(nnn))(inl)
 
     add_l = tf.math.add(inl, merged)
     shape = add_l.get_shape().as_list()
@@ -166,20 +165,20 @@ def upward_layer(
         subsample=strides,
         name="dconv_" + str(number) + "_" + str(nnn + 1),
     )
-    upsample = BatchNormalization(
-        name="batch_" + str(number) + "_" + str(nnn + 1)
-    )(upsample)
-    return tf.keras.layers.ReLU(
-        name="relu_" + str(number) + "_" + str(nnn + 1)
-    )(upsample)
+    upsample = BatchNormalization(name="batch_" + str(number) + "_" + str(nnn + 1))(
+        upsample
+    )
+    return tf.keras.layers.ReLU(name="relu_" + str(number) + "_" + str(nnn + 1))(
+        upsample
+    )
 
 
 def vnet(
-    input_size=(128, 128, 128, 1),
-    optimizer=Adam(lr=1e-4),
-    loss="binary_crossentropy",
-    metrics=["accuracy"],
-):
+    input_size: Tuple[int, int, int, int] = (128, 128, 128, 1),
+    optimizer: tf.keras.optimizers.Optimizer = Adam(lr=1e-4),
+    loss: str = "binary_crossentropy",
+    metrics: List[str] = ["accuracy"],
+) -> tf.keras.Model:
     """Constructs a 3D V-Net architecture for segmentation of Dedicated
     Ventilation or Gas exchange images.
 
@@ -307,11 +306,11 @@ def vnet(
 
 
 def vnet_2dgre(
-    input_size=(128, 128, 14, 1),
-    optimizer=Adam(lr=1e-4),
-    loss="binary_crossentropy",
-    metrics=["accuracy"],
-):
+    input_size: Tuple[int, int, int, int] = (128, 128, 14, 1),
+    optimizer: tf.keras.optimizers.Optimizer = Adam(lr=1e-4),
+    loss: str = "binary_crossentropy",
+    metrics: List[str] = ["accuracy"],
+) -> tf.keras.Model:
     """Constructs a 2.5D V-Net architecture for segmentation of 2D Gradient-
     Recalled Echo (GRE) images.
 
