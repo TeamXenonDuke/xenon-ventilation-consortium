@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from absl import app, flags
 from scipy.ndimage import zoom
-from models.model_vnet import vnet, vnet_2DGRE
+from models.model_vnet import vnet, vnet_2dgre
 from utils import constants, io_utils, misc
 
 FLAGS = flags.FLAGS
@@ -112,7 +112,8 @@ def predict_2d_proton(image: np.ndarray, erosion: int = 0) -> np.ndarray:
 
 
 def predict_2d_xe(ven, erosion: int = 3):
-    """Predict mask using segmentation model for 2D Xe images.
+    """Predict mask using segmentation model for 2D Xe images using 2.5D V-net
+    model.
 
     Args:
         image (np.ndarray): Xe image array.
@@ -123,10 +124,10 @@ def predict_2d_xe(ven, erosion: int = 3):
     """
     current_path = os.path.dirname(__file__)
     mymodel = os.path.join(
-        current_path, "models", "weights", constants.CNNPaths.XE_2_5_D
+        current_path, "models", "weights", constants.CNNPaths.VENT_2_5_D
     )
 
-    model = vnet_2DGRE()
+    model = vnet_2dgre()
     model.load_weights(mymodel)
 
     ven = np.abs(ven)
