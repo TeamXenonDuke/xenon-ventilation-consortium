@@ -161,7 +161,7 @@ def upward_layer(
     upsample = Deconvolution3D(
         add_l,
         n_output_channels,
-        (2, 2, 2),
+        strides,
         subsample=strides,
         name="dconv_" + str(number) + "_" + str(nnn + 1),
     )
@@ -389,7 +389,7 @@ def vnet_2dgre(
 
     aux_shape = add5.get_shape()
     upsample_5 = Deconvolution3D(
-        add5, 128, (2, 2, 2), subsample=(2, 2, 1), name="dconv_5"
+        add5, 128, (2, 2, 1), subsample=(2, 2, 1), name="dconv_5"
     )
 
     upsample_5 = BatchNormalization(name="batch_5_4")(upsample_5)
