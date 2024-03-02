@@ -38,7 +38,7 @@ class Config(config_dict.ConfigDict):
         self.proton_dicom_dir = ""
         self.registration_key = constants.RegistrationKey.PROTON2GAS.value
         self.scan_type = constants.ScanType.GRE.value
-        self.segmentation_key = constants.SegmentationKey.CNN_PROTON.value
+        self.segmentation_key = constants.SegmentationKey.CNN_VENT.value
         self.site = constants.Site.DUKE.value
         self.reference_data_key = constants.ReferenceDataKey.DEFAULT.value
         self.reference_data = ReferenceData(self.reference_data_key)

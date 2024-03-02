@@ -185,7 +185,7 @@ class Subject(object):
                 self.scan_type == constants.ScanType.GRE.value
                 or self.scan_type == constants.ScanType.SPIRAL.value
             ):
-                self.mask_reg = segmentation.predict_2d(self.proton)
+                self.mask_reg = segmentation.predict_2d_proton(self.proton)
             elif self.scan_type == constants.ScanType.RADIAL.value:
                 raise NotImplementedError(
                     "Neural network segmentation on Radial proton image not implemented."
@@ -196,9 +196,7 @@ class Subject(object):
                 self.scan_type == constants.ScanType.GRE.value
                 or self.scan_type == constants.ScanType.SPIRAL.value
             ):
-                raise NotImplementedError(
-                    "Neural network segmentation on 2D vent image not implemented."
-                )
+                self.mask_reg = segmentation.predict_2d_xe(self.ventilation)
             elif self.scan_type == constants.ScanType.RADIAL.value:
                 self.mask_reg = segmentation.predict_3d(self.ventilation)
         elif (
