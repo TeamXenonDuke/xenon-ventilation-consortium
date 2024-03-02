@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from absl import app, flags
 from scipy.ndimage import zoom
+
 from models.model_vnet import vnet, vnet_2dgre
 from utils import constants, io_utils, misc
 
@@ -245,7 +246,7 @@ def main(argv):
         scan_type == constants.ScanType.GRE.value
         or scan_type == constants.ScanType.SPIRAL.value
     ):
-        mask = predict_2d(image)
+        mask = predict_2d_xe(image)
     elif scan_type == constants.ScanType.RADIAL.value:
         mask = predict_3d(image, image_type)
     export_path = os.path.dirname(FLAGS.nii_filename) + "/mask.nii"
