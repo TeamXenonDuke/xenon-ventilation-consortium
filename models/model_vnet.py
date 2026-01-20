@@ -20,7 +20,6 @@ def BatchNormalization(name: str) -> tf.keras.layers.Layer:
         tf.keras.layers.Layer: Batch Normalization layer with fused \
         parameter set to False.
     """
-    # return tf.keras.layers.BatchNormalization(name=name, fused=False)
     return tf.keras.layers.BatchNormalization(name=name)
 
 
@@ -97,7 +96,6 @@ def downward_layer(
         inl = BatchNormalization(name="batch_" + str(number) + "_" + str(nnn))(inl)
         inl = tf.keras.layers.ReLU(name="relu_" + str(number) + "_" + str(nnn))(inl)
 
-    # add_l = tf.math.add(inl, input_layer)
     add_l = tf.keras.layers.Add()([inl, input_layer])
 
     downsample = tf.keras.layers.Conv3D(
@@ -116,8 +114,7 @@ def downward_layer(
     )
     return downsample, add_l
 
-
-'''def upward_layer(
+def upward_layer(
     input0: tf.Tensor,
     input1: tf.Tensor,
     n_convolutions: int,
@@ -138,54 +135,6 @@ def downward_layer(
     Returns:
         tf.Tensor: Upsampled tensor.
     """
-    # merged = tf.concat([input0, input1], axis=4)
-    merged = tf.keras.layers.Concatenate(axis=4)([input0, input1])
-
-    inl = merged
-    for nnn in range(n_convolutions):
-
-        inl = tf.keras.layers.Conv3D(
-            (n_output_channels * 4),
-            kernel_size=5,
-            padding="same",
-            kernel_initializer="he_normal",
-            name="conv_" + str(number) + "_" + str(nnn),
-        )(inl)
-        inl = BatchNormalization(name="batch_" + str(number) + "_" + str(nnn))(inl)
-        inl = tf.keras.layers.ReLU(name="relu_" + str(number) + "_" + str(nnn))(inl)
-
-    # add_l = tf.math.add(inl, merged)
-    add_l = tf.keras.layers.Add(inl, merged)
-
-    shape = add_l.get_shape().as_list()
-    new_shape = (
-        1,
-        shape[1] * 2,
-        shape[2] * 2,
-        shape[3] * 2,
-        n_output_channels,
-    )
-    upsample = Deconvolution3D(
-        add_l,
-        n_output_channels,
-        strides,
-        subsample=strides,
-        name="dconv_" + str(number) + "_" + str(nnn + 1),
-    )
-    upsample = BatchNormalization(name="batch_" + str(number) + "_" + str(nnn + 1))(
-        upsample
-    )
-    return tf.keras.layers.ReLU(name="relu_" + str(number) + "_" + str(nnn + 1))(
-        upsample
-    ) '''
-def upward_layer(
-    input0: tf.Tensor,
-    input1: tf.Tensor,
-    n_convolutions: int,
-    n_output_channels: int,
-    number: int,
-    strides: Tuple[int, int, int] = (2, 2, 2),
-) -> tf.Tensor:
 
     merged = tf.keras.layers.Concatenate(axis=4)([input0, input1])
     inl = merged
@@ -297,7 +246,6 @@ def vnet(
     conv_5_3 = tf.keras.layers.ReLU(name="relu_5_3")(conv_5_3)
     add5 = tf.keras.layers.Add()([conv_5_3, down4])
 
-    # aux_shape = add5.get_shape()
     upsample_5 = Deconvolution3D(
         add5, 128, (2, 2, 2), subsample=(2, 2, 2), name="dconv_5"
     )
@@ -429,7 +377,6 @@ def vnet_2dgre(
     conv_5_3 = tf.keras.layers.ReLU(name="relu_5_3")(conv_5_3)
     add5 = tf.keras.layers.Add()([conv_5_3, down4])
 
-    # aux_shape = add5.get_shape()
     upsample_5 = Deconvolution3D(
         add5, 128, (2, 2, 1), subsample=(2, 2, 1), name="dconv_5"
     )
@@ -464,7 +411,6 @@ def vnet_2dgre(
     conv_9_2 = BatchNormalization(name="batch_9_2")(conv_9_2)
     conv_9_2 = tf.keras.layers.ReLU(name="relu_9_2")(conv_9_2)
 
-    # softmax = Softmax()(conv_9_2)
     sigmoid_v = tf.keras.layers.Conv3D(
         1,
         kernel_size=(1, 1, 1),
@@ -476,6 +422,7 @@ def vnet_2dgre(
     sigmoid_v = tf.keras.layers.Activation(activation="sigmoid")(sigmoid_v)
 
     model = Model(inputs=input_gas, outputs=sigmoid_v)
+
     model.compile(
         optimizer=optimizer,
         loss=loss,
