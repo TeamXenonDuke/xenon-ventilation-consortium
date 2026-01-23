@@ -166,7 +166,7 @@ def importDICOM(path: str, scan_type: str) -> Dict[str, Any]:
 
     for filename in files:
         # read the file
-        ds = pydicom.read_file(filename)
+        ds = pydicom.dcmread(filename)
         # get the slice number
         slice_number[files.index(filename)] = int(ds.InstanceNumber)
         # store the raw image data
