@@ -106,7 +106,7 @@ def binStats(image, image_bin, image_raw, mask):
         np.average(abs(image[mask]))
     )
     stats_dict[constants.STATSIOFields.VEN_HIGH] = np.divide(
-        np.sum((image_bin == 6) | (image_bin == 7)), maskall
+        np.sum((image_bin == 7)), maskall
     )
 
     _, SNR_Rayleigh, _, _ = fSNR_3T(image_raw, mask)
