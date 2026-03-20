@@ -40,6 +40,7 @@ class Config(config_dict.ConfigDict):
         self.scan_type = constants.ScanType.GRE.value
         self.segmentation_key = constants.SegmentationKey.CNN_VENT.value
         self.site = constants.Site.DUKE.value
+        self.vent_normalization_method = constants.NormalizationMethods.PERCENTILE_MASKED
         self.reference_data_key = constants.ReferenceDataKey.DEFAULT.value
         self.reference_data = ReferenceData(self.reference_data_key)
         self.subject_id = "test"

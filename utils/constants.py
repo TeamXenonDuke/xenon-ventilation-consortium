@@ -193,6 +193,8 @@ class VENHISTOGRAMFields(object):
     COLOR = (0.4196, 0.6824, 0.8392)
     XLIM = 1.0
     YLIM = 0.07
+    XLIM_MAT = 2.0
+    YLIM_MAT = 0.08
     NUMBINS = 50
     REFERENCE_FIT = (0.04462, 0.52, 0.2713)
 
@@ -220,6 +222,8 @@ class NormalizationMethods(object):
     PERCENTILE_MASKED = "percentile_masked"
     PERCENTILE = "percentile"
     MEAN = "mean"
+    MEAN_ANCHOR_THRESHOLD = "mean_anchor_threshold"  # Use mean-anchor normalization, then apply thresholding instead of linear binning to separate ventilation-defect and healthy voxels.
+
 
 
 class BIN2COLORMAP(object):

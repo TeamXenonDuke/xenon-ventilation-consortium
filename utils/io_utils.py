@@ -106,8 +106,8 @@ def _merge_rgb_and_gray(gray_slice: np.ndarray, rgb_slice: np.ndarray) -> np.nda
     # construct RGB version of gray-level ute
     gray_slice_color = np.dstack((gray_slice, gray_slice, gray_slice))
     # Convert the input image and color mask to HSV
-    gray_slice_hsv = skimage.color.rgb2hsv(gray_slice_color)
-    rgb_slice_hsv = skimage.color.rgb2hsv(rgb_slice)
+    gray_slice_hsv = skimage.color.rgb2hsv(gray_slice_color.astype(np.float32))
+    rgb_slice_hsv = skimage.color.rgb2hsv(rgb_slice.astype(np.float32))
     # Replace the hue and saturation of the original image
     # with that of the color mask
     gray_slice_hsv[..., 0] = rgb_slice_hsv[..., 0]
@@ -369,6 +369,7 @@ def export_montage_overlay(
     nii_filename = "ven_Sub" + subject_id + ".nii"
     nii_path = os.path.join(os.path.dirname(path), nii_filename)
     export_3DRGB2nii(image=colormap, path=nii_path, fov=fov, n_slice=n_slice)
+
     # make montage from the image stack
     img_montage = make_montage(colormap[:, :, ind_start:ind_end:ind_inter, :])
     # plot and save the montage
@@ -390,9 +391,11 @@ def export_histogram(
     x_lim: float,
     y_lim: float,
     num_bins: int,
+    normalization_method: str,
     refer_fit: Tuple[float, float, float],
     xticks=None,
     yticks=None,
+    mean_anchor_threshold: float = 0.5534
 ):
     """Export historam plot of data along with reference histogram shape.
 
@@ -425,11 +428,15 @@ def export_histogram(
     _, bins, _ = ax.hist(
         data, num_bins, color=color, weights=weights, edgecolor="black"
     )
-    # define and plot healthy reference line
-    normal = refer_fit[0] * np.exp(
-        -(((np.asarray(bins) - refer_fit[1]) / refer_fit[2]) ** 2)
-    )
-    ax.plot(bins, normal, "--", color="k", linewidth=4)
+    if normalization_method == constants.NormalizationMethods.PERCENTILE_MASKED:
+        # define and plot healthy reference line
+        normal = refer_fit[0] * np.exp(
+            -(((np.asarray(bins) - refer_fit[1]) / refer_fit[2]) ** 2)
+        )
+        ax.plot(bins, normal, "--", color="k", linewidth=4)
+    else:
+        ax.vlines(mean_anchor_threshold, ymin=0, ymax=0.1, colors='k', linestyles='--', linewidth=6)
+
     ax.set_ylabel("Fraction of Total Pixels", fontsize=35)
     xlim((0, x_lim))
     ylim((0, y_lim))
@@ -447,7 +454,6 @@ def export_histogram(
     fig.tight_layout()
     plt.savefig(path)
     plt.close()
-
 
 def export_html_pdf_vent(
     subject_id: str,

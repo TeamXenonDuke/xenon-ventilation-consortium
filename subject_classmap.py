@@ -99,6 +99,8 @@ class Subject(object):
         self.xefov = 0.0
         self.xenon_dicom_dir = str(config.xenon_dicom_dir)
         self.xenonslicethickness = 0.0
+        self.mean_anchor_threshold = 55.34 / 100.0, # The original paper used 60%, but 55.34% better matched the VDP obtained using linear binning in healthy subjects.       
+
 
     # Function definitions
     def readinfiles(self):
@@ -240,17 +242,29 @@ class Subject(object):
 
     def gas_binning(self):
         """Bin ventilation image to colormap bins."""
-        bin_threshold = self.config.reference_data.ref_bins_ven
-        (
-            self.ventilation,
-            self.ventilation_binning,
-            self.mask_reg_vent,
-        ) = binning.gasBinning(
-            image=abs(self.ventilation_cor),
-            bin_threshold=bin_threshold,
-            mask=self.mask_reg,
-            percentile=constants.VEN_PERCENTILE_RESCALE,
-        )
+        if self.config.vent_normalization_method == constants.NormalizationMethods.PERCENTILE_MASKED:
+
+            bin_threshold = self.config.reference_data.ref_bins_ven
+            (
+                self.ventilation,
+                self.ventilation_binning,
+                self.mask_reg_vent,
+            ) = binning.gasBinning(
+                image=abs(self.ventilation_cor),
+                bin_threshold=bin_threshold,
+                mask=self.mask_reg,
+                percentile=constants.VEN_PERCENTILE_RESCALE,
+            )
+        elif self.config.vent_normalization_method == constants.NormalizationMethods.MEAN_ANCHOR_THRESHOLD:
+            (
+                self.ventilation,
+                self.ventilation_binning,
+                self.mask_reg_vent,
+            ) = binning.mean_anchor_threshold(
+                image=abs(self.ventilation_cor),
+                mean_anchor_threshold=self.mean_anchor_threshold,
+                mask=self.mask_reg,
+            )
 
     def generate_statistics(self):
         """Calculate ventilation image statistics."""
@@ -342,18 +356,29 @@ class Subject(object):
         )
         data = misc.normalize(
             self.ventilation_cor,
-            method=constants.NormalizationMethods.PERCENTILE_MASKED,
+            method=self.config.vent_normalization_method,
             mask=self.mask_reg.astype(bool),
             percentile=constants.VEN_PERCENTILE_RESCALE,
         )[self.mask_reg.astype(bool)]
+
+        if self.config.vent_normalization_method == constants.NormalizationMethods.PERCENTILE_MASKED:
+            x_lim_hist = constants.VENHISTOGRAMFields.XLIM
+            y_lim_hist = constants.VENHISTOGRAMFields.YLIM
+
+        else:
+            x_lim_hist = constants.VENHISTOGRAMFields.XLIM_MAT # MAT Mean Anchor Threshold
+            y_lim_hist = constants.VENHISTOGRAMFields.YLIM_MAT # MAT Mean Anchor Threshold
+
         io_utils.export_histogram(
             data=data,
             path=os.path.join(self.data_dir, constants.OutputPaths.VEN_HIST_PNG),
             color=constants.VENHISTOGRAMFields.COLOR,
-            x_lim=constants.VENHISTOGRAMFields.XLIM,
-            y_lim=constants.VENHISTOGRAMFields.YLIM,
+            x_lim=x_lim_hist,
+            y_lim=y_lim_hist,
             num_bins=constants.VENHISTOGRAMFields.NUMBINS,
+            normalization_method = self.config.vent_normalization_method,
             refer_fit=constants.VENHISTOGRAMFields.REFERENCE_FIT,
+            mean_anchor_threshold = self.mean_anchor_threshold,
         )
 
     def generateHtmlPdf(self):

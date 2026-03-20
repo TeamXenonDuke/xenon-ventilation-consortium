@@ -56,3 +56,38 @@ def gasBinning(
     mask_vent[mask_vent < 3] = 0
     mask_vent = mask_vent.astype(bool)
     return image_n, gas_binning, mask_vent
+
+def mean_anchor_threshold(
+    image: np.ndarray,
+    mean_anchor_threshold: float ,
+    mask: np.ndarray,
+) -> Tuple[np.ndarray, ...]:
+    """Rescale and bin the image given the bin_threshold.
+
+    Args:
+        image: np.ndarray image to be binned
+        bin_threshold: List bin_threshold
+        mask: np.ndararay masked region to performed binning
+    Returns:
+        Tuple of the rescaled image, binned image, and mask that excludes VDP
+    """
+    # rescale
+    image_n = misc.normalize(
+        image,
+        method=constants.NormalizationMethods.MEAN_ANCHOR_THRESHOLD,
+        mask=mask.astype(bool),
+    )
+
+    bin_threshold = mean_anchor_threshold;
+    bvolume = np.ones(np.shape(image_n))
+    bvolume[(image_n > 0) & (image_n <= bin_threshold)] = 2
+    bvolume[(image_n> 0) & (image_n > bin_threshold)] = 5
+
+    gas_binning = bvolume
+
+    # create ventilation mask
+    mask_vent = np.copy(gas_binning)
+    # exclude VDP in the ventilation map
+    mask_vent[mask_vent < 3] = 0
+    mask_vent = mask_vent.astype(bool)
+    return image_n, gas_binning, mask_vent
