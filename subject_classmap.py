@@ -99,7 +99,6 @@ class Subject(object):
         self.xefov = 0.0
         self.xenon_dicom_dir = str(config.xenon_dicom_dir)
         self.xenonslicethickness = 0.0
-        self.mean_anchor_threshold = 55.34 / 100.0, # The original paper used 60%, but 55.34% better matched the VDP obtained using linear binning in healthy subjects.       
 
 
     # Function definitions
@@ -262,7 +261,7 @@ class Subject(object):
                 self.mask_reg_vent,
             ) = binning.mean_anchor_threshold(
                 image=abs(self.ventilation_cor),
-                mean_anchor_threshold=self.mean_anchor_threshold,
+                mean_anchor_threshold=constants.MEAN_ANCHOR_THRESHOLD,
                 mask=self.mask_reg,
             )
 
@@ -378,7 +377,7 @@ class Subject(object):
             num_bins=constants.VENHISTOGRAMFields.NUMBINS,
             normalization_method = self.config.vent_normalization_method,
             refer_fit=constants.VENHISTOGRAMFields.REFERENCE_FIT,
-            mean_anchor_threshold = self.mean_anchor_threshold,
+            mean_anchor_threshold = constants.MEAN_ANCHOR_THRESHOLD,
         )
 
     def generateHtmlPdf(self):
