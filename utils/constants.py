@@ -17,7 +17,7 @@ RAYLEIGH_FACTOR = 0.66
 VEN_PERCENTILE_RESCALE = 99.0
 VEN_PERCENTILE_THRESHOLD_SEG = 80
 PROTON_PERCENTILE_RESCALE = 99.8
-
+MEAN_ANCHOR_THRESHOLD = 55.34 / 100.0 # The original paper used 60%, but 55.34% better matched the VDP obtained using linear binning in healthy subjects.
 
 class IOFields(object):
     """General IOFields constants."""
