@@ -395,7 +395,7 @@ def export_histogram(
     refer_fit: Tuple[float, float, float],
     xticks=None,
     yticks=None,
-    mean_anchor_threshold: float = 0.5534
+    threshold_ma: float = 0.5534
 ):
     """Export historam plot of data along with reference histogram shape.
 
@@ -435,7 +435,7 @@ def export_histogram(
         )
         ax.plot(bins, normal, "--", color="k", linewidth=4)
     else:
-        ax.vlines(mean_anchor_threshold, ymin=0, ymax=0.1, colors='k', linestyles='--', linewidth=6)
+        ax.vlines(threshold_ma, ymin=0, ymax=0.1, colors='k', linestyles='--', linewidth=6)
 
     ax.set_ylabel("Fraction of Total Pixels", fontsize=35)
     xlim((0, x_lim))

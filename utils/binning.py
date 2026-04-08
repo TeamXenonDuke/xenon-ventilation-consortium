@@ -57,9 +57,9 @@ def gasBinning(
     mask_vent = mask_vent.astype(bool)
     return image_n, gas_binning, mask_vent
 
-def mean_anchor_threshold(
+def threshold_ma(
     image: np.ndarray,
-    mean_anchor_threshold: float ,
+    threshold_ma: float ,
     mask: np.ndarray,
 ) -> Tuple[np.ndarray, ...]:
     """Rescale and bin the image given the bin_threshold.
@@ -74,11 +74,11 @@ def mean_anchor_threshold(
     # rescale
     image_n = misc.normalize(
         image,
-        method=constants.NormalizationMethods.MEAN_ANCHOR_THRESHOLD,
+        method=constants.NormalizationMethods.THRESHOLD_MA,
         mask=mask.astype(bool),
     )
 
-    bin_threshold = mean_anchor_threshold;
+    bin_threshold = threshold_ma;
     bvolume = np.ones(np.shape(image_n))
     bvolume[(image_n > 0) & (image_n <= bin_threshold)] = 2
     bvolume[(image_n> 0) & (image_n > bin_threshold)] = 5

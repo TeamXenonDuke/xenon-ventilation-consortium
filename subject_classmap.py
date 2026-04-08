@@ -254,14 +254,14 @@ class Subject(object):
                 mask=self.mask_reg,
                 percentile=constants.VEN_PERCENTILE_RESCALE,
             )
-        elif self.config.vent_normalization_method == constants.NormalizationMethods.MEAN_ANCHOR_THRESHOLD:
+        elif self.config.vent_normalization_method == constants.NormalizationMethods.THRESHOLD_MA:
             (
                 self.ventilation,
                 self.ventilation_binning,
                 self.mask_reg_vent,
-            ) = binning.mean_anchor_threshold(
+            ) = binning.threshold_ma(
                 image=abs(self.ventilation_cor),
-                mean_anchor_threshold=constants.MEAN_ANCHOR_THRESHOLD,
+                threshold_ma=constants.THRESHOLD_MA,
                 mask=self.mask_reg,
             )
 
@@ -377,7 +377,7 @@ class Subject(object):
             num_bins=constants.VENHISTOGRAMFields.NUMBINS,
             normalization_method = self.config.vent_normalization_method,
             refer_fit=constants.VENHISTOGRAMFields.REFERENCE_FIT,
-            mean_anchor_threshold = constants.MEAN_ANCHOR_THRESHOLD,
+            threshold_ma = constants.THRESHOLD_MA,
         )
 
     def generateHtmlPdf(self):
