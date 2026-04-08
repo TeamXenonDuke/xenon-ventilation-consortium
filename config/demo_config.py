@@ -27,6 +27,7 @@ class Config(base_config.Config):
         self.registration_key = constants.RegistrationKey.PROTON2GAS.value
         self.scan_type = constants.ScanType.GRE.value
         self.segmentation_key = constants.SegmentationKey.MANUAL_VENT.value
+        self.vent_normalization_method = constants.NormalizationMethods.PERCENTILE_MASKED
         self.site = constants.Site.UVA.value
         self.subject_id = "102009_W00"
         self.xenon_dicom_dir = os.path.join(self.data_dir, "xe_gre_hpg_cor_2102_new_7")

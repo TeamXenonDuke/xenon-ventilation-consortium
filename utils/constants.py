@@ -17,7 +17,7 @@ RAYLEIGH_FACTOR = 0.66
 VEN_PERCENTILE_RESCALE = 99.0
 VEN_PERCENTILE_THRESHOLD_SEG = 80
 PROTON_PERCENTILE_RESCALE = 99.8
-
+THRESHOLD_MA = 55.34 / 100.0 # The original paper used 60%, but 55.34% better matched the VDP obtained using linear binning in healthy subjects.
 
 class IOFields(object):
     """General IOFields constants."""
@@ -193,6 +193,8 @@ class VENHISTOGRAMFields(object):
     COLOR = (0.4196, 0.6824, 0.8392)
     XLIM = 1.0
     YLIM = 0.07
+    XLIM_MAT = 2.0
+    YLIM_MAT = 0.08
     NUMBINS = 50
     REFERENCE_FIT = (0.04462, 0.52, 0.2713)
 
@@ -220,6 +222,8 @@ class NormalizationMethods(object):
     PERCENTILE_MASKED = "percentile_masked"
     PERCENTILE = "percentile"
     MEAN = "mean"
+    THRESHOLD_MA = "threshold_ma"  # Use mean-anchor normalization, then apply thresholding instead of linear binning to separate ventilation-defect and healthy voxels.
+
 
 
 class BIN2COLORMAP(object):
