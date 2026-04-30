@@ -292,9 +292,11 @@ class Subject(object):
         ## make montage, plot histogram, and generate report
         index2color = constants.BIN2COLORMAP.VENT_BIN2COLOR_MAP
         # Get start/stop intervals
-        ind_start, ind_inter = misc.get_plot_indices(
-            image=self.mask_reg, scan_type=self.config.scan_type
-        )
+        # ind_start, ind_inter = misc.get_plot_indices(
+        #     image=self.mask_reg, scan_type=self.config.scan_type
+        # )
+        ind_start =4
+        ind_inter = 1
         # export montages
         io_utils.export_montage_overlay(
             image_bin=self.ventilation_binning,
