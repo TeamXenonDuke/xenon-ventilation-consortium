@@ -265,6 +265,10 @@ def normalize(
         image[np.isnan(image)] = 0
         image[np.isinf(image)] = 0
         return image / np.mean(image[mask > 0])
+    elif method == constants.NormalizationMethods.THRESHOLD_MA:
+        image_mean = np.mean(image[mask])
+        image_n = np.divide(np.multiply(image, mask), image_mean)
+        return image_n
     else:
         raise ValueError("Invalid normalization method")
 
